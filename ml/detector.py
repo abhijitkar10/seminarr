@@ -1,9 +1,11 @@
 from __future__ import annotations
 from typing import Dict, Any, Tuple, List
+from pathlib import Path
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from data.db import connect, insert_anomaly
 import json
+import joblib
 
 
 FEATURE_KEYS = (
@@ -17,13 +19,38 @@ FEATURE_KEYS = (
     "off_hours",
 )
 
+MODEL_PATH = Path(__file__).resolve().parents[1] / "data" / "model.joblib"
+
 
 class AnomalyDetector:
     def __init__(self, contamination: float = 0.05, random_state: int = 42):
         self.model = IsolationForest(contamination=contamination, random_state=random_state)
         self.trained = False
-        self.means = None
-        self.stds = None
+        self.means: np.ndarray | None = None
+        self.stds: np.ndarray | None = None
+        self._try_load()
+
+    @property
+    def is_trained(self) -> bool:
+        return self.trained
+
+    def _try_load(self) -> None:
+        if MODEL_PATH.exists():
+            self.load()
+
+    def save(self) -> None:
+        MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(
+            {"model": self.model, "means": self.means, "stds": self.stds},
+            MODEL_PATH,
+        )
+
+    def load(self) -> None:
+        data = joblib.load(MODEL_PATH)
+        self.model = data["model"]
+        self.means = data["means"]
+        self.stds = data["stds"]
+        self.trained = True
 
     def train(self) -> None:
         conn = connect()
@@ -38,8 +65,11 @@ class AnomalyDetector:
         self.trained = True
         self.means = np.nanmean(X, axis=0)
         self.stds = np.nanstd(X, axis=0) + 1e-6
+        self.save()
 
     def score_event(self, feature_row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
+        if not self.trained:
+            self._try_load()
         x = np.array([self._safe_float(feature_row.get(k)) for k in FEATURE_KEYS], dtype=float)
         x = np.where(np.isnan(x), 0.0, x)
         score = -float(self.model.score_samples([x])[0]) if self.trained else 0.0

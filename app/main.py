@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi import Body
 from typing import List, Dict, Any
 from models.schemas import AuthEvent, IngestResponse, Anomaly, UserProfile
@@ -8,6 +8,7 @@ from ml.features import compute_features
 from ml.detector import AnomalyDetector
 from ml.baseline import build_user_profile
 from alerting.alerts import maybe_send_alert
+from adapters.csv_parser import parse_csv
 from datetime import datetime
 import json
 from adapters.okta import normalize_okta_event
@@ -18,7 +19,7 @@ init_db()
 detector = AnomalyDetector()
 
 
-def _process(rows: List[Dict[str, Any]]) -> IngestResponse:
+def _process(rows: List[Dict[str, Any]], train: bool = True) -> IngestResponse:
     for r in rows:
         if isinstance(r.get("timestamp"), datetime):
             r["timestamp"] = r["timestamp"].isoformat()
@@ -29,12 +30,14 @@ def _process(rows: List[Dict[str, Any]]) -> IngestResponse:
     finally:
         conn.close()
     insert_features(feature_rows)
-    detector.train()
-    for fr in feature_rows:
-        score, contrib = detector.score_event(fr)
-        risk, reasons = detector.risk_score(score, fr)
-        detector.record_anomaly(fr, score, risk, reasons, contrib)
-        maybe_send_alert(fr["event_id"], fr["user_id"], risk, reasons, contrib)
+    if train:
+        detector.train()
+    if detector.is_trained:
+        for fr in feature_rows:
+            score, contrib = detector.score_event(fr)
+            risk, reasons = detector.risk_score(score, fr)
+            detector.record_anomaly(fr, score, risk, reasons, contrib)
+            maybe_send_alert(fr["event_id"], fr["user_id"], risk, reasons, contrib)
     return IngestResponse(accepted=len(accepted_ids), errors=[])
 
 
@@ -97,3 +100,35 @@ def user_profile(user_id: str) -> UserProfile:
         failure_rate=prof["failure_rate"],
         resource_frequency=prof["resource_frequency"],
     )
+
+
+@app.post("/upload/csv", response_model=IngestResponse)
+async def upload_csv(file: UploadFile = File(...)) -> IngestResponse:
+    rows, errors = parse_csv(file.file)
+    if errors:
+        return IngestResponse(accepted=0, errors=errors)
+    return _process(rows, train=False)
+
+
+@app.post("/train")
+def train_model() -> Dict[str, Any]:
+    detector.train()
+    return {"trained": detector.is_trained}
+
+
+@app.post("/score")
+def score_all() -> Dict[str, Any]:
+    if not detector.is_trained:
+        return {"scored": 0, "error": "Model not trained yet"}
+    conn = connect()
+    rows = conn.execute("SELECT * FROM features ORDER BY timestamp DESC LIMIT 2000").fetchall()
+    conn.close()
+    scored = 0
+    for r in rows:
+        fr = dict(r)
+        score, contrib = detector.score_event(fr)
+        risk, reasons = detector.risk_score(score, fr)
+        detector.record_anomaly(fr, score, risk, reasons, contrib)
+        maybe_send_alert(fr["event_id"], fr["user_id"], risk, reasons, contrib)
+        scored += 1
+    return {"scored": scored}

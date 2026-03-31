@@ -1,0 +1,14 @@
+app/__pycache__/
+adapters/__pycache__/
+alerting/__pycache__/
+data/__pycache__/
+ml/__pycache__/
+models/__pycache__/
+tests/__pycache__/
+venv/
+__pycache__/
+.pytest_cache/
+.venv
+*.pyc
+data/store.sqlite
+data/model.joblib
