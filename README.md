@@ -3,6 +3,13 @@
 AI-powered anomaly detection for authentication & authorization logs.  
 Identifies compromised credentials, insider threats, privilege abuse, and account takeover attempts using Isolation Forest ML.
 
+## Getting Started
+
+1. Copy `.env.example` into `.env`.
+2. Fill in your Okta hook secret in `.env`.
+3. Start the API and dashboard locally.
+4. Follow the detailed Okta setup guide in `docs/okta_event_hook_setup.md`.
+
 ## Quick Start
 
 ```bash
