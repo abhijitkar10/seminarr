@@ -12,3 +12,5 @@ __pycache__/
 *.pyc
 data/store.sqlite
 data/model.joblib
+.DS_Store
+.env
