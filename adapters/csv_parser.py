@@ -35,7 +35,7 @@ def _coerce_float(val: str | None) -> float | None:
         return None
 
 
-def parse_csv(file: BinaryIO | io.StringIO) -> tuple[list[dict[str, Any]], list[str]]:
+def parse_csv(file: BinaryIO | io.TextIOBase) -> tuple[list[dict[str, Any]], list[str]]:
     """Parse a CSV file into a list of event dicts.
 
     Returns (rows, errors) where errors is a list of human-readable messages.
@@ -43,10 +43,11 @@ def parse_csv(file: BinaryIO | io.StringIO) -> tuple[list[dict[str, Any]], list[
     errors: list[str] = []
     rows: list[dict[str, Any]] = []
 
-    if isinstance(file, (io.RawIOBase, io.BufferedIOBase)):
-        text = io.TextIOWrapper(file, encoding="utf-8-sig")
-    else:
+    text: io.TextIOBase
+    if isinstance(file, io.TextIOBase):
         text = file
+    else:
+        text = io.TextIOWrapper(file, encoding="utf-8-sig")
 
     reader = csv.DictReader(text)
     if reader.fieldnames is None:

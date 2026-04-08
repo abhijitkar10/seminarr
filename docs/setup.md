@@ -37,6 +37,21 @@ Terminal 2 — Dashboard:
 streamlit run dashboard/app.py --server.port 8501
 ```
 
+### Environment configuration
+
+Copy the example environment file and set your Okta hook secret:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and set:
+
+```env
+OKTA_EVENT_HOOK_AUTH_SECRET=your-okta-hook-secret
+OKTA_EVENT_HOOK_AUTH_HEADER=authorization
+```
+
 ### Access
 - Dashboard: http://localhost:8501
 - API Swagger: http://localhost:8000/docs

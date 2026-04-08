@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi import Body
 from typing import List, Dict, Any
 from models.schemas import AuthEvent, IngestResponse, Anomaly, UserProfile
@@ -12,11 +12,23 @@ from adapters.csv_parser import parse_csv
 from datetime import datetime
 import json
 from adapters.okta import normalize_okta_event
+import os
 
 app = FastAPI(title="Auth Anomaly Detection PoC")
 
 init_db()
 detector = AnomalyDetector()
+
+
+def _verify_okta_hook_auth(request: Request) -> None:
+    secret = os.getenv("OKTA_EVENT_HOOK_AUTH_SECRET")
+    if not secret:
+        return
+    header_name = os.getenv("OKTA_EVENT_HOOK_AUTH_HEADER", "authorization")
+    actual = request.headers.get(header_name)
+    if actual != secret:
+        raise HTTPException(status_code=401, detail="Invalid Okta hook credentials")
+
 
 
 def _process(rows: List[Dict[str, Any]], train: bool = True) -> IngestResponse:
@@ -58,6 +70,50 @@ def ingest_events(events: List[AuthEvent] = Body(...)) -> IngestResponse:
 def ingest_okta(events: List[dict] = Body(...)) -> IngestResponse:
     normalized = [normalize_okta_event(e) for e in events]
     return _process([AuthEvent(**e).model_dump() for e in normalized])
+
+
+@app.api_route("/hooks/okta", methods=["GET", "POST"])
+async def okta_event_hook(request: Request) -> Dict[str, Any]:
+    _verify_okta_hook_auth(request)
+
+    challenge = request.headers.get("x-okta-verification-challenge")
+    if challenge:
+        return {"verification": challenge}
+
+    if request.method == "GET":
+        return {"ok": True}
+
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"accepted": 0, "errors": ["Invalid JSON payload"]}
+
+    events: list[dict] = []
+    if isinstance(payload, dict):
+        data = payload.get("data") or {}
+        maybe_events = data.get("events") if isinstance(data, dict) else None
+        if isinstance(maybe_events, list):
+            events = maybe_events
+        elif isinstance(payload.get("events"), list):
+            events = payload["events"]
+
+    if not events:
+        return {"accepted": 0, "errors": ["No events found in payload"]}
+
+    normalized = [normalize_okta_event(e) for e in events]
+    valid: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for i, e in enumerate(normalized):
+        try:
+            valid.append(AuthEvent(**e).model_dump())
+        except Exception as ex:
+            errors.append(f"event {i}: {ex}")
+
+    if not valid:
+        return {"accepted": 0, "errors": errors or ["No valid events"]}
+
+    res = _process(valid, train=False)
+    return {"accepted": res.accepted, "errors": errors}
 
 
 @app.get("/anomalies", response_model=List[Anomaly])

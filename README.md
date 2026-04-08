@@ -45,3 +45,15 @@ docker-compose up --build
 - [Workflow](docs/workflow.md)
 - [API Reference](docs/api-reference.md)
 - [Setup Guide](docs/setup.md)
+- [Okta Event Hook Setup](docs/okta_event_hook_setup.md)
+
+## Environment setup
+
+Copy `.env.example` to `.env` and set your local Okta hook secret before running the API:
+
+```bash
+cp .env.example .env
+# then edit .env to add your real secret
+```
+
+Do not commit your real `.env` file to source control.
