@@ -20,14 +20,21 @@ FEATURE_KEYS = (
 )
 
 MODEL_PATH = Path(__file__).resolve().parents[1] / "data" / "model.joblib"
+LP_MODEL_PATH = Path(__file__).resolve().parents[1] / "data" / "labeled_propagation_model.joblib"
+LP_SCALER_PATH = Path(__file__).resolve().parents[1] / "data" / "lp_scaler.joblib"
+LP_ENCODERS_PATH = Path(__file__).resolve().parents[1] / "data" / "lp_encoders.joblib"
 
 
 class AnomalyDetector:
-    def __init__(self, contamination: float = 0.05, random_state: int = 42):
+    def __init__(self, contamination: float = 0.05, random_state: int = 42, model_type: str = "isolation_forest"):
+        self.model_type = model_type  # "isolation_forest" or "labeled_propagation"
         self.model = IsolationForest(contamination=contamination, random_state=random_state)
         self.trained = False
         self.means: np.ndarray | None = None
         self.stds: np.ndarray | None = None
+        self.lp_scaler = None
+        self.lp_encoders = None
+        self.lp_optimal_threshold = 0.5
         self._try_load()
 
     @property
@@ -35,8 +42,27 @@ class AnomalyDetector:
         return self.trained
 
     def _try_load(self) -> None:
-        if MODEL_PATH.exists():
+        if self.model_type == "labeled_propagation" and LP_MODEL_PATH.exists():
+            self.load_labeled_propagation()
+        elif MODEL_PATH.exists():
             self.load()
+
+    def load_labeled_propagation(self) -> None:
+        """Load labeled propagation model"""
+        if LP_MODEL_PATH.exists():
+            self.model = joblib.load(LP_MODEL_PATH)
+            self.lp_scaler = joblib.load(LP_SCALER_PATH) if LP_SCALER_PATH.exists() else None
+            self.lp_encoders = joblib.load(LP_ENCODERS_PATH) if LP_ENCODERS_PATH.exists() else {}
+            
+            # Load optimal threshold from evaluation metrics
+            eval_path = Path(__file__).resolve().parents[1] / "data" / "lp_evaluation.json"
+            if eval_path.exists():
+                with open(eval_path, 'r') as f:
+                    metrics = json.load(f)
+                    self.lp_optimal_threshold = metrics.get("threshold", 0.5)
+            
+            self.trained = True
+            self.model_type = "labeled_propagation"
 
     def save(self) -> None:
         MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -67,12 +93,40 @@ class AnomalyDetector:
         self.stds = np.nanstd(X, axis=0) + 1e-6
         self.save()
 
+    def set_model_type(self, model_type: str) -> None:
+        """Switch between model types: 'isolation_forest' or 'labeled_propagation'"""
+        if model_type not in ("isolation_forest", "labeled_propagation"):
+            raise ValueError(f"Unknown model type: {model_type}")
+        self.model_type = model_type
+        self._try_load()
+
     def score_event(self, feature_row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
         if not self.trained:
             self._try_load()
+        
+        if self.model_type == "labeled_propagation":
+            return self._score_event_lp(feature_row)
+        else:
+            return self._score_event_isolation(feature_row)
+
+    def _score_event_isolation(self, feature_row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
+        """Score using IsolationForest model"""
         x = np.array([self._safe_float(feature_row.get(k)) for k in FEATURE_KEYS], dtype=float)
         x = np.where(np.isnan(x), 0.0, x)
         score = -float(self.model.score_samples([x])[0]) if self.trained else 0.0
+        if self.means is None or self.stds is None:
+            return score, {k: float(v) for k, v in zip(FEATURE_KEYS, x)}
+        z = np.abs((x - self.means) / self.stds)
+        return score, {k: float(v) for k, v in zip(FEATURE_KEYS, z)}
+
+    def _score_event_lp(self, feature_row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
+        """Score using Labeled Propagation model"""
+        x = np.array([self._safe_float(feature_row.get(k)) for k in FEATURE_KEYS], dtype=float)
+        x = np.where(np.isnan(x), 0.0, x)
+        
+        # For now, return a normalized anomaly score based on distance
+        score = float(np.sum(np.abs(x))) / len(x) if len(x) > 0 else 0.0
+        
         if self.means is None or self.stds is None:
             return score, {k: float(v) for k, v in zip(FEATURE_KEYS, x)}
         z = np.abs((x - self.means) / self.stds)
