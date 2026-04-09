@@ -1,9 +1,9 @@
 """
 Labeled Propagation Model for Anomaly Detection
-Uses semi-supervised learning with labels from Book1.xlsx dataset
+Semi-supervised learning from authentication logs
 """
 from __future__ import annotations
-from typing import Dict, Any, Tuple, Optional, List
+from typing import Dict, Any, Tuple
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -11,16 +11,13 @@ from sklearn.semi_supervised import LabelPropagation
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import (
-    classification_report,
     confusion_matrix,
     roc_auc_score,
     roc_curve,
-    precision_recall_curve,
     f1_score,
     precision_score,
     recall_score,
     accuracy_score,
-    auc,
 )
 import joblib
 import json
@@ -55,17 +52,17 @@ class LabeledPropagationDetector:
         if LP_MODEL_PATH.exists():
             self.load()
 
-    def prepare_features(self, df: pd.DataFrame) -> Tuple[np.ndarray, List[str]]:
-        """Prepare features from raw data"""
+    def prepare_features(self, df: pd.DataFrame) -> Tuple[np.ndarray, list[str]]:
+        """Extract and prepare features from authentication logs"""
         features_df = df.copy()
 
-        # Convert timestamp to features
+        # Extract temporal features from timestamp
         features_df["Login Timestamp"] = pd.to_datetime(features_df["Login Timestamp"])
         features_df["hour"] = features_df["Login Timestamp"].dt.hour
         features_df["day_of_week"] = features_df["Login Timestamp"].dt.weekday
         features_df["day_of_month"] = features_df["Login Timestamp"].dt.day
 
-        # Categorical features to encode
+        # Encode categorical features
         categorical_features = ["Country", "Device Type", "Browser Name and Version"]
         for cat_feature in categorical_features:
             if cat_feature not in self.encoders:
@@ -78,7 +75,7 @@ class LabeledPropagationDetector:
                     features_df[cat_feature].astype(str)
                 )
 
-        # Select numeric features
+        # Define features for training
         numeric_features = [
             "Round-Trip Time [ms]",
             "ASN",
@@ -90,19 +87,16 @@ class LabeledPropagationDetector:
             "Browser Name and Version",
         ]
 
-        # Handle missing values
-        X = features_df[numeric_features].fillna(features_df[numeric_features].median())
-
-        # Convert to numpy
-        X_array = X.values.astype(np.float64)
-
         self.feature_names = numeric_features
-        return X_array, numeric_features
+
+        # Impute missing values with median
+        X = features_df[numeric_features].fillna(features_df[numeric_features].median())
+        return X.values.astype(np.float64), numeric_features
 
     def train(
         self,
         df: pd.DataFrame,
-        label_column: str = "Is Account Takeover",
+        label_column: str = "Is Attack IP",
         test_size: float = 0.2,
         random_state: int = 42,
     ) -> Dict[str, Any]:
@@ -118,17 +112,18 @@ class LabeledPropagationDetector:
         Returns:
             Dictionary with evaluation metrics
         """
-        print(f"Loading {len(df)} rows of data...")
+        print(f"Loading {len(df)} rows of authentication logs...")
 
-        # Prepare features
+        # Prepare features and labels
         X, feature_names = self.prepare_features(df)
         y = df[label_column].astype(int).values
 
-        # Split data with stratification to handle imbalanced data
+        # Stratified train/test split
         X_train_val, X_test, y_train_val, y_test = train_test_split(
             X, y, test_size=test_size, random_state=random_state, stratify=y
         )
 
+        # Further split training data into train and validation
         X_train, X_val, y_train, y_val = train_test_split(
             X_train_val,
             y_train_val,
@@ -137,9 +132,9 @@ class LabeledPropagationDetector:
             stratify=y_train_val,
         )
 
-        print(f"Training set: {len(X_train)} samples ({(y_train.sum() / len(y_train)):.2%} anomalies)")
-        print(f"Validation set: {len(X_val)} samples ({(y_val.sum() / len(y_val)):.2%} anomalies)")
-        print(f"Test set: {len(X_test)} samples ({(y_test.sum() / len(y_test)):.2%} anomalies)")
+        print(f"Train: {len(X_train)} ({y_train.sum()/len(y_train):.2%} anomalies)")
+        print(f"Val:   {len(X_val)} ({y_val.sum()/len(y_val):.2%} anomalies)")
+        print(f"Test:  {len(X_test)} ({y_test.sum()/len(y_test):.2%} anomalies)")
 
         # Scale features
         self.scaler = StandardScaler()
@@ -147,9 +142,8 @@ class LabeledPropagationDetector:
         X_val_scaled = self.scaler.transform(X_val)
         X_test_scaled = self.scaler.transform(X_test)
 
-        # For semi-supervised learning, mark ~50% of non-anomaly training samples as unlabeled
+        # Semi-supervised setup: mark 50% of negative samples as unlabeled
         y_train_semi = y_train.copy()
-        # Only mark negative class samples as unlabeled (keep anomalies labeled)
         negative_indices = np.where(y_train == 0)[0]
         n_unlabeled = int(len(negative_indices) * 0.5)
         unlabeled_idx = np.random.RandomState(random_state).choice(
@@ -157,59 +151,57 @@ class LabeledPropagationDetector:
         )
         y_train_semi[unlabeled_idx] = -1
 
-        # Train labeled propagation model with optimized parameters
+        # Train Labeled Propagation model
         print("\nTraining Labeled Propagation model...")
         self.model = LabelPropagation(
-            kernel="rbf", 
-            gamma=0.3,  # Increased gamma for tighter decision boundaries
-            n_neighbors=10,  # More neighbors for better propagation
+            kernel="rbf",
+            gamma=0.3,
+            n_neighbors=10,
             max_iter=1000,
-            tol=1e-3
+            tol=1e-3,
         )
 
         # Combine train and validation for semi-supervised training
-        X_train_combined = np.vstack([X_train_scaled, X_val_scaled])
-        y_train_combined = np.concatenate([y_train_semi, y_val])
+        X_combined = np.vstack([X_train_scaled, X_val_scaled])
+        y_combined = np.concatenate([y_train_semi, y_val])
 
-        self.model.fit(X_train_combined, y_train_combined)
+        self.model.fit(X_combined, y_combined)
 
-        # Get probability outputs for better evaluation
-        y_pred_proba_test = self.model.predict_proba(X_test_scaled)[:, 1]
-        
-        # Find optimal threshold using validation set
+        # Find optimal decision threshold
         y_pred_proba_val = self.model.predict_proba(X_val_scaled)[:, 1]
         fpr, tpr, thresholds = roc_curve(y_val, y_pred_proba_val)
-        optimal_idx = np.argmax(tpr - fpr)  # Youden's index
+        optimal_idx = np.argmax(tpr - fpr)
         optimal_threshold = thresholds[optimal_idx]
-        
-        print(f"\nOptimal decision threshold: {optimal_threshold:.4f}")
-        
-        # Apply optimal threshold
+
+        print(f"Optimal threshold: {optimal_threshold:.4f}")
+
+        # Evaluate on test set
+        y_pred_proba_test = self.model.predict_proba(X_test_scaled)[:, 1]
         y_pred = (y_pred_proba_test >= optimal_threshold).astype(int)
 
         # Calculate metrics
         metrics = self._calculate_metrics(
-            y_test, y_pred, y_pred_proba_test, "Test Set", optimal_threshold
+            y_test, y_pred, y_pred_proba_test, optimal_threshold
         )
-
-        # Also evaluate on full test set
-        print("\n" + "="*60)
-        print("EVALUATION RESULTS")
-        print("="*60)
 
         self.metrics = metrics
         self.trained = True
         self.optimal_threshold = optimal_threshold
 
+        print("\n" + "="*60)
+        print("EVALUATION RESULTS")
+        print("="*60)
+        self._print_metrics(metrics)
+
         return metrics
 
     def _calculate_metrics(
-        self, y_true: np.ndarray, y_pred: np.ndarray, y_pred_proba: np.ndarray, set_name: str = "", threshold: float = 0.5
+        self, y_true: np.ndarray, y_pred: np.ndarray, y_pred_proba: np.ndarray, threshold: float = 0.5
     ) -> Dict[str, Any]:
-        """Calculate all evaluation metrics"""
+        """Calculate evaluation metrics"""
         cm = confusion_matrix(y_true, y_pred)
-        
-        # Handle case where confusion matrix might be 1x2 or 2x1
+
+        # Handle edge cases with confusion matrix shape
         if cm.shape == (1, 2):
             tn, fp = cm[0]
             fn, tp = 0, 0
@@ -217,7 +209,6 @@ class LabeledPropagationDetector:
             fn, tn = cm[0, 0], 0
             tp, fp = cm[1, 0], 0
         elif cm.shape == (1, 1):
-            # Only one class predicted
             if y_pred[0] == 0:
                 tn = np.sum(y_true == 0)
                 fp, fn, tp = 0, np.sum(y_true == 1), 0
@@ -226,13 +217,12 @@ class LabeledPropagationDetector:
                 tn, fp, fn = 0, np.sum(y_true == 0), 0
         else:
             tn, fp, fn, tp = cm.ravel()
-            
+
         specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
         sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        
-        metrics = {
+
+        return {
             "timestamp": datetime.now().isoformat(),
-            "set_name": set_name,
             "threshold": float(threshold),
             "accuracy": float(accuracy_score(y_true, y_pred)),
             "precision": float(precision_score(y_true, y_pred, zero_division=0)),
@@ -241,65 +231,52 @@ class LabeledPropagationDetector:
             "roc_auc": float(roc_auc_score(y_true, y_pred_proba)),
             "specificity": float(specificity),
             "sensitivity": float(sensitivity),
-            "true_positives": int(tp),
-            "true_negatives": int(tn),
-            "false_positives": int(fp),
-            "false_negatives": int(fn),
+            "tp": int(tp),
+            "tn": int(tn),
+            "fp": int(fp),
+            "fn": int(fn),
+            "confusion_matrix": cm.tolist(),
         }
 
-        metrics["confusion_matrix"] = cm.tolist()
-
-        print(f"\n{set_name} Metrics:")
-        print(f"  Accuracy:  {metrics['accuracy']:.4f}")
-        print(f"  Precision: {metrics['precision']:.4f}")
-        print(f"  Recall:    {metrics['recall']:.4f}")
-        print(f"  F1 Score:  {metrics['f1']:.4f}")
-        print(f"  ROC-AUC:   {metrics['roc_auc']:.4f}")
-        print(f"  Specificity: {metrics['specificity']:.4f}")
-
-        print(f"\nConfusion Matrix:\n{cm}")
-
-        # Detailed classification report
-        print(f"\nClassification Report:")
-        print(classification_report(y_true, y_pred, target_names=["Normal", "Anomaly"]))
-
-        return metrics
-
-    def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Predict on new data using optimal threshold"""
-        if self.model is None:
-            raise ValueError("Model not trained. Call train() first.")
-
-        if self.scaler is None:
-            raise ValueError("Scaler not initialized.")
-
-        X_scaled = self.scaler.transform(X)
-        probabilities = self.model.predict_proba(X_scaled)[:, 1]
-        predictions = (probabilities >= self.optimal_threshold).astype(int)
-
-        return predictions, probabilities
+    def _print_metrics(self, metrics: Dict[str, Any]) -> None:
+        """Pretty print metrics"""
+        print(f"Accuracy:  {metrics['accuracy']:.4f}")
+        print(f"Precision: {metrics['precision']:.4f}")
+        print(f"Recall:    {metrics['recall']:.4f}")
+        print(f"F1 Score:  {metrics['f1']:.4f}")
+        print(f"ROC-AUC:   {metrics['roc_auc']:.4f}")
+        print(f"Specificity: {metrics['specificity']:.4f}")
+        print(f"Sensitivity: {metrics['sensitivity']:.4f}")
+        print(f"\nConfusion Matrix:")
+        print(f"  TN: {metrics['tn']:5d}  FP: {metrics['fp']:5d}")
+        print(f"  FN: {metrics['fn']:5d}  TP: {metrics['tp']:5d}")
 
     def save(self) -> None:
-        """Save model and artifacts"""
-        LP_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-
+        """Save model and preprocessing objects"""
         joblib.dump(self.model, LP_MODEL_PATH)
         joblib.dump(self.scaler, LP_SCALER_PATH)
         joblib.dump(self.encoders, LP_ENCODERS_PATH)
-
         with open(LP_EVAL_PATH, "w") as f:
-            json.dump(self.metrics, f, indent=2, default=str)
-
-        print(f"\nModel saved to {LP_MODEL_PATH}")
-        print(f"Scaler saved to {LP_SCALER_PATH}")
-        print(f"Encoders saved to {LP_ENCODERS_PATH}")
-        print(f"Evaluation metrics saved to {LP_EVAL_PATH}")
+            json.dump(self.metrics, f, indent=2)
+        print(f"Model saved to {LP_MODEL_PATH}")
 
     def load(self) -> None:
-        """Load model and artifacts"""
-        if LP_MODEL_PATH.exists():
-            self.model = joblib.load(LP_MODEL_PATH)
-            self.scaler = joblib.load(LP_SCALER_PATH)
-            self.encoders = joblib.load(LP_ENCODERS_PATH)
-            self.trained = True
-            print(f"Model loaded from {LP_MODEL_PATH}")
+        """Load saved model and preprocessing objects"""
+        if not LP_MODEL_PATH.exists():
+            raise FileNotFoundError(f"Model not found at {LP_MODEL_PATH}")
+        self.model = joblib.load(LP_MODEL_PATH)
+        self.scaler = joblib.load(LP_SCALER_PATH)
+        self.encoders = joblib.load(LP_ENCODERS_PATH)
+        with open(LP_EVAL_PATH, "r") as f:
+            self.metrics = json.load(f)
+        self.trained = True
+        print(f"Model loaded from {LP_MODEL_PATH}")
+
+    def predict(self, df: pd.DataFrame) -> np.ndarray:
+        """Make predictions on new data"""
+        if not self.trained:
+            raise ValueError("Model not trained. Call train() first.")
+        X, _ = self.prepare_features(df)
+        X_scaled = self.scaler.transform(X)
+        y_pred_proba = self.model.predict_proba(X_scaled)[:, 1]
+        return (y_pred_proba >= self.optimal_threshold).astype(int)
