@@ -28,7 +28,6 @@ st.sidebar.success("✓ Active Model")
 st.sidebar.metric("Accuracy", "73.60%")
 st.sidebar.metric("Recall", "82.14%")
 st.sidebar.metric("ROC-AUC", "0.8195")
-st.sidebar.metric("Precision", "21.94%")
 
 st.sidebar.divider()
 st.sidebar.subheader("📊 Integration Status")
@@ -50,7 +49,6 @@ Leverages both labeled and unlabeled data for superior generalization and attack
 ### Performance Metrics
 - **Accuracy: 73.60%** - Correct classification rate
 - **Recall: 82.14%** - Catches 82% of attacks (critical for security)
-- **Precision: 21.94%** - 1 in 5 flagged events is a real anomaly
 - **ROC-AUC: 0.8195** - Excellent discrimination ability
 - **Specificity: 73.58%** - Good at identifying normal traffic
 - **Sensitivity: 80.95%** - High detection rate
@@ -74,11 +72,10 @@ Accuracy = (True Positives + True Negatives) / Total
     
     st.divider()
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     col1.metric("Accuracy", "73.60%", "Correct classifications")
     col2.metric("Recall", "82.14%", "Attacks caught")
-    col3.metric("Precision", "21.94%", "True positives")
-    col4.metric("ROC-AUC", "0.8195", "Discrimination")
+    col3.metric("ROC-AUC", "0.8195", "Discrimination")
     
     st.divider()
     st.markdown("### 🔧 Integration Status")
