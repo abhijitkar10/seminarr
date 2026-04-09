@@ -240,13 +240,13 @@ class LabeledPropagationDetector:
 
     def _print_metrics(self, metrics: Dict[str, Any]) -> None:
         """Pretty print metrics"""
-        print(f"Accuracy:  {metrics['accuracy']:.4f}")
-        print(f"Precision: {metrics['precision']:.4f}")
-        print(f"Recall:    {metrics['recall']:.4f}")
-        print(f"F1 Score:  {metrics['f1']:.4f}")
-        print(f"ROC-AUC:   {metrics['roc_auc']:.4f}")
-        print(f"Specificity: {metrics['specificity']:.4f}")
-        print(f"Sensitivity: {metrics['sensitivity']:.4f}")
+        print(f"Accuracy:   {metrics['accuracy']:.4f} ({metrics['accuracy']*100:.2f}%)")
+        print(f"Recall:     {metrics['recall']:.4f} ({metrics['recall']*100:.2f}%)")
+        print(f"Precision:  {metrics['precision']:.4f} ({metrics['precision']*100:.2f}%)")
+        print(f"F1 Score:   {metrics['f1']:.4f}")
+        print(f"ROC-AUC:    {metrics['roc_auc']:.4f}")
+        print(f"Specificity: {metrics['specificity']:.4f} ({metrics['specificity']*100:.2f}%)")
+        print(f"Sensitivity: {metrics['sensitivity']:.4f} ({metrics['sensitivity']*100:.2f}%)")
         print(f"\nConfusion Matrix:")
         print(f"  TN: {metrics['tn']:5d}  FP: {metrics['fp']:5d}")
         print(f"  FN: {metrics['fn']:5d}  TP: {metrics['tp']:5d}")

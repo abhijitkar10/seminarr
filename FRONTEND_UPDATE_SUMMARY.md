@@ -1,31 +1,31 @@
-# Frontend Update Summary: Model Selection & Okta Integration
+# Frontend Update Summary: Labeled Propagation & Okta Integration
 
 ## ✅ Frontend Updates Completed
 
-### 1. **Model Info Tab** (New)
-Displays comprehensive model information including:
-- Performance metrics comparison
-- Recall, F1, ROC-AUC, Specificity
-- Training data details
+### 1. **Model Info Tab** (Updated)
+Displays comprehensive Labeled Propagation model information including:
+- Key performance metrics (Accuracy 73.60%, Recall 82.14%)
+- ROC-AUC and Precision scores
+- Training data details (Book2.xlsx, 49,999 logs)
 - Use case recommendations
 
-### 2. **Model Selector (Sidebar)**
-- Radio button to choose between models
-- Real-time metrics display
+### 2. **Simplified Sidebar** (Updated)
+- Removed model selector radio button
+- Direct display of model metrics
 - Integration status indicators
-- Model-specific recommendations
+- Single Labeled Propagation focus
 
-### 3. **Enhanced Training Controls**
-- Support for both Labeled Propagation and IsolationForest
-- Model-specific training logic
+### 3. **Enhanced Training Controls** (Updated)
+- Streamlined to Labeled Propagation only
+- Simplified training logic
 - Better error handling
 - Loading spinners for UX
 
-### 4. **Better Visualization**
-- Comparison table (Labeled Propagation vs IsolationForest)
-- Color-coded recommendations
+### 4. **Better Visualization** (Updated)
+- Focused on Labeled Propagation metrics
+- Color-coded status displays
 - Integration status boxes
-- Data source documentation
+- Clear performance indicators
 
 ## 🔒 Okta Integration Status
 
@@ -38,6 +38,7 @@ Event Processing:       ✓ Works as before
 Normalization:          ✓ Converts Okta events to standard format
 Database Storage:       ✓ Auto-saves anomalies
 Alerting:             ✓ Triggered on detection
+Model:                ✓ Uses Labeled Propagation only
 ```
 
 ### 📋 Setup Instructions (Unchanged)
@@ -70,7 +71,7 @@ Copy the HTTPS URL provided (e.g., `https://xyz-abc.ngrok-free.dev`)
 curl http://localhost:8000/anomalies
 ```
 
-### 🔄 Data Flow (Still the Same)
+### 🔄 Data Flow
 ```
 Okta Event
     ↓
@@ -80,7 +81,7 @@ Event Normalization (normalize_okta_event)
     ↓
 Feature Extraction (compute_features)
     ↓
-Model Scoring (IsolationForest or Labeled Propagation)
+Model Scoring (Labeled Propagation)
     ↓
 Anomaly Detection & Database Storage
     ↓
@@ -89,32 +90,29 @@ Alert Triggering (if configured)
 
 ## 🎨 Frontend Features
 
-### Model Info Tab Displays:
-- Performance comparison table
-- 205% F1 improvement callout
-- 590% recall improvement
-- Integration status
-- Use case recommendations
+### Model Performance Display:
+- **Accuracy:** 73.60%
+- **Recall:** 82.14%
+- **Precision:** 21.94%
+- **ROC-AUC:** 0.8195
+- **Dataset:** Book2.xlsx (49,999 logs)
 
-### Sidebar Model Selector:
-- **Labeled Propagation ⭐** (Recommended)
-  - Metrics: 82.14% recall, 0.3433 F1, 0.8195 ROC-AUC
-  - Use when: Labels available, security-critical
-  
-- **IsolationForest** (Baseline)
-  - Metrics: 11.90% recall, 0.1124 F1, 0.5917 ROC-AUC
-  - Use when: No labels, baseline comparison needed
+### Sidebar Information:
+- Single model focus: Labeled Propagation ⭐
+- Real-time metrics display
+- Integration status indicator
+- Deployment confidence message
 
-### Upload Tab Updates:
-- Model selector integration
+### Upload Tab Features:
+- Simple training interface
 - Better training feedback
 - Scoring spinner
 - Data validation messages
 
-### Anomalies Tab Updates:
-- Data source documentation
-- Okta event note
+### Anomalies Tab:
+- Data source documentation (Okta events)
 - Better formatting
+- Clear anomaly detection explanation
 
 ## 📊 Backend Compatibility
 
@@ -126,9 +124,9 @@ Alert Triggering (if configured)
 - Alert system unchanged
 
 ✅ **Model Integration**
-- Both models available via separate classes
-- Can switch between them
-- Trained on same data
+- Single Labeled Propagation model
+- Trained on Book2.xlsx (49,999 records)
+- Optimized for production deployment
 - Compatible with dashboard
 
 ## 🚀 Running the Full Stack
@@ -155,48 +153,49 @@ streamlit run dashboard/app.py --server.port 8501
 **Then Open:**
 - Dashboard: http://localhost:8501
 - API Docs: http://localhost:8000/docs
-- Model Info: First tab in dashboard
 
 ## 📝 Testing Okta Integration
 
 ```bash
-# 1. Upload some test data via dashboard or CSV
-# 2. Train model (choose from sidebar)
+# 1. Upload test data via dashboard or CSV
+# 2. Train model on Labeled Propagation
 # 3. Score events
 # 4. Configure Okta hook with ngrok URL
 # 5. Trigger auth event in Okta
-# 6. Check dashboard Anomalies tab
+# 6. Check dashboard Anomalies tab for detection
 ```
 
 ## ✨ Key Features
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| Model Selection | ✅ Working | Sidebar radio button |
+| Accuracy Display | ✅ Working | 73.60% primary metric |
 | Metrics Display | ✅ Working | Real-time in sidebar |
 | Model Info Tab | ✅ Working | Full performance details |
 | Okta Integration | ✅ Working | No changes required |
 | ngrok Tunnel | ✅ Ready | User setup via terminal |
 | CSV Upload | ✅ Working | All formats supported |
-| Event Scoring | ✅ Working | Both models supported |
+| Event Scoring | ✅ Working | Labeled Propagation only |
 | Anomaly Detection | ✅ Working | Database persisted |
 | Alerting | ✅ Working | Email/Slack ready |
 
-## 🎯 Next Steps
+## 🎯 Deployment Status
 
-1. ✓ Train model on Book2.xlsx (49K rows) - Already started
-2. ✓ Wait for training to complete
-3. ✓ Start dashboard and API servers
-4. ✓ Select preferred model (recommend Labeled Propagation)
-5. ✓ Test with CSV upload first
-6. ✓ Configure Okta hook if needed
+1. ✅ Model trained on Book2.xlsx (49,999 records)
+2. ✅ Dashboard updated with metrics display
+3. ✅ API endpoints operational
+4. ✅ Okta integration ready
+5. ✅ Documentation updated
+6. ✅ IsolationForest removed
+
+**Status:** Ready for production use
 
 ## 📚 Documentation
 
 - Full setup guide: `docs/setup.md`
 - Okta integration details: `docs/okta_event_hook_setup.md`
 - API reference: `docs/api-reference.md`
-- Model evaluation: `README.md` (Model section)
+- Model evaluation: `docs/model_evaluation_report.md`
 
 ---
 

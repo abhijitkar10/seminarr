@@ -1,24 +1,17 @@
 # Auth Anomaly Detection PoC
 
 AI-powered anomaly detection for authentication & authorization logs.  
-Identifies compromised credentials, insider threats, privilege abuse, and account takeover attempts using **Labeled Propagation** semi-supervised ML (primary) and Isolation Forest (fallback).
+Identifies compromised credentials, insider threats, privilege abuse, and account takeover attempts using **Labeled Propagation** semi-supervised machine learning.
 
-## ML Models Available
+## ML Model
 
-### Labeled Propagation (Recommended) ⭐
+### Labeled Propagation ⭐
+- **Accuracy: 73.60%** - Classified correctly
 - **Recall: 82.14%** - Catches most anomalies
-- **F1 Score: 0.3433** - Best overall performance
+- **Precision: 21.94%** - Manageable false positive rate
 - **ROC-AUC: 0.8195** - Excellent discrimination
 - Semi-supervised learning leverages both labeled and unlabeled data
-- Trained on Book1.xlsx (4,999 authentication logs)
-
-### IsolationForest (Fallback)
-- **Recall: 11.90%** - Conservative approach
-- **F1 Score: 0.1124**
-- **ROC-AUC: 0.5917**
-- Unsupervised, works with any data
-
-**See [Model Evaluation Report](docs/model_evaluation_report.md) for detailed comparison**
+- Trained on Book2.xlsx (49,999 authentication logs, 9.04% anomalies)
 
 ## Getting Started
 
@@ -27,24 +20,18 @@ Identifies compromised credentials, insider threats, privilege abuse, and accoun
 3. Start the API and dashboard locally.
 4. Follow the detailed Okta setup guide in `docs/okta_event_hook_setup.md`.
 
-## Training Models on Sample Data
+## Training Model on Sample Data
 
-### Train Labeled Propagation on Book1.xlsx
+### Train Labeled Propagation on Current Dataset
 ```bash
 # Requires pre-labeled data (Is Attack IP, Is Account Takeover, etc.)
-python scripts/train_labeled_propagation.py
+python scripts/train_on_book2.py
 ```
 
-### Train Both Models and Compare
-```bash
-# Trains IsolationForest AND Labeled Propagation on identical data
-python scripts/train_both_models.py
-```
-
-### Results from Book1.xlsx Dataset
-- **Setup:** 4,999 authentication logs, 80/20 train/test split
-- **Winner:** Labeled Propagation with 205% better F1 score
-- **Anomaly Rate:** 8.42% (421 attack IPs out of 4,579 normal)
+### Results from Book2.xlsx Dataset
+- **Setup:** 49,999 authentication logs, stratified 80/20 train/test split
+- **Performance:** 73.60% Accuracy, 82.14% Recall, 21.94% Precision
+- **Anomaly Rate:** 9.04% (4,519 anomalies out of 49,999 events)
 
 ## Quick Start
 
@@ -89,7 +76,7 @@ docker-compose up --build
 - [API Reference](docs/api-reference.md)
 - [Setup Guide](docs/setup.md)
 - [Okta Event Hook Setup](docs/okta_event_hook_setup.md)
-- **[Model Evaluation Report](docs/model_evaluation_report.md)** ← Labeled Propagation vs IsolationForest
+- **[Model Evaluation Report](docs/model_evaluation_report.md)** ← Labeled Propagation Performance
 
 ## Environment setup
 

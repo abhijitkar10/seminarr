@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Dict, Any, Tuple, List
 from pathlib import Path
 import numpy as np
-from sklearn.ensemble import IsolationForest
 from data.db import connect, insert_anomaly
 import json
 import joblib
@@ -19,22 +18,23 @@ FEATURE_KEYS = (
     "off_hours",
 )
 
-MODEL_PATH = Path(__file__).resolve().parents[1] / "data" / "model.joblib"
 LP_MODEL_PATH = Path(__file__).resolve().parents[1] / "data" / "labeled_propagation_model.joblib"
 LP_SCALER_PATH = Path(__file__).resolve().parents[1] / "data" / "lp_scaler.joblib"
 LP_ENCODERS_PATH = Path(__file__).resolve().parents[1] / "data" / "lp_encoders.joblib"
+LP_EVAL_PATH = Path(__file__).resolve().parents[1] / "data" / "lp_evaluation.json"
 
 
 class AnomalyDetector:
-    def __init__(self, contamination: float = 0.05, random_state: int = 42, model_type: str = "isolation_forest"):
-        self.model_type = model_type  # "isolation_forest" or "labeled_propagation"
-        self.model = IsolationForest(contamination=contamination, random_state=random_state)
+    """Anomaly detector using Labeled Propagation semi-supervised learning"""
+
+    def __init__(self):
+        self.model = None
+        self.scaler = None
+        self.encoders = {}
+        self.optimal_threshold = 0.5
         self.trained = False
         self.means: np.ndarray | None = None
         self.stds: np.ndarray | None = None
-        self.lp_scaler = None
-        self.lp_encoders = None
-        self.lp_optimal_threshold = 0.5
         self._try_load()
 
     @property
@@ -42,82 +42,148 @@ class AnomalyDetector:
         return self.trained
 
     def _try_load(self) -> None:
-        if self.model_type == "labeled_propagation" and LP_MODEL_PATH.exists():
+        """Try to load saved Labeled Propagation model"""
+        if LP_MODEL_PATH.exists():
             self.load_labeled_propagation()
-        elif MODEL_PATH.exists():
-            self.load()
 
     def load_labeled_propagation(self) -> None:
-        """Load labeled propagation model"""
+        """Load labeled propagation model and preprocessing objects"""
         if LP_MODEL_PATH.exists():
             self.model = joblib.load(LP_MODEL_PATH)
-            self.lp_scaler = joblib.load(LP_SCALER_PATH) if LP_SCALER_PATH.exists() else None
-            self.lp_encoders = joblib.load(LP_ENCODERS_PATH) if LP_ENCODERS_PATH.exists() else {}
-            
+            self.scaler = joblib.load(LP_SCALER_PATH) if LP_SCALER_PATH.exists() else None
+            self.encoders = joblib.load(LP_ENCODERS_PATH) if LP_ENCODERS_PATH.exists() else {}
+
             # Load optimal threshold from evaluation metrics
-            eval_path = Path(__file__).resolve().parents[1] / "data" / "lp_evaluation.json"
-            if eval_path.exists():
-                with open(eval_path, 'r') as f:
+            if LP_EVAL_PATH.exists():
+                with open(LP_EVAL_PATH, "r") as f:
                     metrics = json.load(f)
-                    self.lp_optimal_threshold = metrics.get("threshold", 0.5)
-            
+                    self.optimal_threshold = metrics.get("threshold", 0.5)
+
             self.trained = True
-            self.model_type = "labeled_propagation"
-
-    def save(self) -> None:
-        MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(
-            {"model": self.model, "means": self.means, "stds": self.stds},
-            MODEL_PATH,
-        )
-
-    def load(self) -> None:
-        data = joblib.load(MODEL_PATH)
-        self.model = data["model"]
-        self.means = data["means"]
-        self.stds = data["stds"]
-        self.trained = True
 
     def train(self) -> None:
+        """Train Labeled Propagation model on events with labels"""
+        from ml.labeled_propagation_model import LabeledPropagationDetector
+        import pandas as pd
+
         conn = connect()
-        rows = conn.execute("SELECT * FROM features ORDER BY timestamp DESC LIMIT 2000").fetchall()
+        rows = conn.execute(
+            "SELECT * FROM events ORDER BY timestamp DESC LIMIT 50000"
+        ).fetchall()
         conn.close()
+
         if len(rows) < 50:
             return
-        X = np.array([[self._safe_float(r[k]) for k in FEATURE_KEYS] for r in rows], dtype=float)
-        col_means = np.where(np.isnan(X), 0.0, X).mean(axis=0)
-        X = np.where(np.isnan(X), col_means, X)
-        self.model.fit(X)
-        self.trained = True
-        self.means = np.nanmean(X, axis=0)
-        self.stds = np.nanstd(X, axis=0) + 1e-6
-        self.save()
 
-    def set_model_type(self, model_type: str) -> None:
-        """Switch between model types: 'isolation_forest' or 'labeled_propagation'"""
-        if model_type not in ("isolation_forest", "labeled_propagation"):
-            raise ValueError(f"Unknown model type: {model_type}")
-        self.model_type = model_type
-        self._try_load()
+        # Convert to DataFrame
+        data = [dict(r) for r in rows]
+        df = pd.DataFrame(data)
+
+        # Check for label column
+        label_col = None
+        if "Is Attack IP" in df.columns:
+            label_col = "Is Attack IP"
+        elif "Is Account Takeover" in df.columns:
+            label_col = "Is Account Takeover"
+        else:
+            return
+
+        # Train model
+        detector = LabeledPropagationDetector()
+        detector.train(df, label_column=label_col)
+        detector.save()
+        self.load_labeled_propagation()
+
+    def score_event(
+        self, feature_row: Dict[str, Any]
+    ) -> Tuple[float, Dict[str, float]]:
+        """Score event using Labeled Propagation model"""
+        if not self.trained:
+            self._try_load()
+
+        x = np.array(
+            [self._safe_float(feature_row.get(k)) for k in FEATURE_KEYS], dtype=float
+        )
+        x = np.where(np.isnan(x), 0.0, x)
+
+        # Anomaly score based on feature deviation
+        score = float(np.sum(np.abs(x))) / len(x) if len(x) > 0 else 0.0
+
+        if self.means is None or self.stds is None:
+            # Initialize on first use
+            self.means = np.zeros(len(x))
+            self.stds = np.ones(len(x))
+
+        z = np.abs((x - self.means) / self.stds)
+        return score, {k: float(v) for k, v in zip(FEATURE_KEYS, z)}
+
+    def risk_score(self, s: float, f: Dict[str, Any]) -> Tuple[float, List[str]]:
+        """Calculate risk score from anomaly score and features"""
+        reasons = []
+        risk = 0.0
+
+        # Base score from anomaly detection
+        risk += 0.5 * s
+
+        # Feature-based risk factors
+        if f.get("off_hours"):
+            risk += 0.8
+            reasons.append("Off-hours access")
+        if (f.get("geo_velocity_kmh") or 0) > 600:
+            risk += 1.2
+            reasons.append("Unrealistic geo-velocity")
+        if (f.get("failure_burst") or 0) > 0.5:
+            risk += 1.0
+            reasons.append("Failure burst before event")
+        if (f.get("resource_rarity") or 0) > 0.8:
+            risk += 0.7
+            reasons.append("Rare resource access")
+        if not f.get("new_device"):
+            risk -= 0.2
+
+        return risk, reasons
+
+    def record_anomaly(
+        self,
+        event: Dict[str, Any],
+        score: float,
+        risk: float,
+        reasons: List[str],
+        contributions: Dict[str, float],
+    ) -> None:
+        """Record detected anomaly in database"""
+        conn = connect()
+        conn.execute(
+            "INSERT INTO anomalies (event_id, user_id, timestamp, score, risk, reasons, contributions) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                event.get("event_id"),
+                event.get("user_id"),
+                event.get("timestamp"),
+                score,
+                risk,
+                json.dumps(reasons),
+                json.dumps(contributions),
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+    @staticmethod
+    def _safe_float(v: Any) -> float:
+        """Safely convert value to float"""
+        if v is None:
+            return np.nan
+        try:
+            return float(v)
+        except (ValueError, TypeError):
+            return np.nan
+
 
     def score_event(self, feature_row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
         if not self.trained:
             self._try_load()
         
-        if self.model_type == "labeled_propagation":
-            return self._score_event_lp(feature_row)
-        else:
-            return self._score_event_isolation(feature_row)
-
-    def _score_event_isolation(self, feature_row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
-        """Score using IsolationForest model"""
-        x = np.array([self._safe_float(feature_row.get(k)) for k in FEATURE_KEYS], dtype=float)
-        x = np.where(np.isnan(x), 0.0, x)
-        score = -float(self.model.score_samples([x])[0]) if self.trained else 0.0
-        if self.means is None or self.stds is None:
-            return score, {k: float(v) for k, v in zip(FEATURE_KEYS, x)}
-        z = np.abs((x - self.means) / self.stds)
-        return score, {k: float(v) for k, v in zip(FEATURE_KEYS, z)}
+        return self._score_event_lp(feature_row)
 
     def _score_event_lp(self, feature_row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
         """Score using Labeled Propagation model"""
