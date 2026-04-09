@@ -1,9 +1,16 @@
 from __future__ import annotations
 from typing import Dict, Any, Optional
 from math import radians, sin, cos, asin, sqrt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import sqlite3
 from data.db import connect
+
+
+def _parse_event_timestamp(value: str) -> datetime:
+    ts = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if ts.tzinfo is not None:
+        return ts.astimezone(timezone.utc).replace(tzinfo=None)
+    return ts
 
 
 def haversine_km(lat1: Optional[float], lon1: Optional[float], lat2: Optional[float], lon2: Optional[float]) -> Optional[float]:
@@ -21,7 +28,7 @@ def haversine_km(lat1: Optional[float], lon1: Optional[float], lat2: Optional[fl
 
 
 def compute_features(event: Dict[str, Any], conn: Optional[sqlite3.Connection] = None) -> Dict[str, Any]:
-    ts = datetime.fromisoformat(event["timestamp"])
+    ts = _parse_event_timestamp(event["timestamp"])
     hour = ts.hour
     day_of_week = ts.weekday()
 
@@ -38,7 +45,8 @@ def compute_features(event: Dict[str, Any], conn: Optional[sqlite3.Connection] =
     prev = None
     for h in history:
         try:
-            if datetime.fromisoformat(h["timestamp"]) < ts:
+            hts = _parse_event_timestamp(h["timestamp"])
+            if hts < ts:
                 prev = h
                 break
         except Exception:
@@ -54,7 +62,7 @@ def compute_features(event: Dict[str, Any], conn: Optional[sqlite3.Connection] =
         prev_lon = prev["longitude"]
         geo_distance_km = haversine_km(event.get("latitude"), event.get("longitude"), prev_lat, prev_lon)
         try:
-            prev_ts = datetime.fromisoformat(prev["timestamp"])
+            prev_ts = _parse_event_timestamp(prev["timestamp"])
             delta_hours = max((ts - prev_ts).total_seconds() / 3600.0, 1e-6)
             if geo_distance_km is not None:
                 geo_velocity_kmh = geo_distance_km / delta_hours

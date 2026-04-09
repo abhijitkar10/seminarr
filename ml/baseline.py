@@ -2,7 +2,14 @@ from __future__ import annotations
 from typing import Dict, Any
 from data.db import connect
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def _parse_event_timestamp(value: str) -> datetime:
+    ts = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if ts.tzinfo is not None:
+        return ts.astimezone(timezone.utc).replace(tzinfo=None)
+    return ts
 
 
 def build_user_profile(user_id: str, limit: int = 1000) -> Dict[str, Any]:
@@ -29,7 +36,7 @@ def build_user_profile(user_id: str, limit: int = 1000) -> Dict[str, Any]:
     total = 0
     for r in rows:
         try:
-            ts = datetime.fromisoformat(r["timestamp"])
+            ts = _parse_event_timestamp(r["timestamp"])
             hours.append(ts.hour)
         except Exception:
             pass

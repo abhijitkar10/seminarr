@@ -225,7 +225,7 @@ with tab_trends:
     rows = db.fetch_recent_events(limit=2000)
     df = pd.DataFrame([dict(r) for r in rows])
     if not df.empty:
-        df["date"] = pd.to_datetime(df["timestamp"]).dt.date
+        df["date"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce").dt.date
 
         st.markdown("**Event Volume by Date**")
         vol = df.groupby("date")["success"].count()
@@ -236,7 +236,7 @@ with tab_trends:
         anom_rows = db.fetch_anomalies(limit=2000)
         anom_df = pd.DataFrame([dict(r) for r in anom_rows])
         if not anom_df.empty:
-            anom_df["date"] = pd.to_datetime(anom_df["timestamp"]).dt.date
+            anom_df["date"] = pd.to_datetime(anom_df["timestamp"], utc=True, errors="coerce").dt.date
             anom_vol = anom_df.groupby("date")["score"].count()
             anom_vol.name = "anomalies"
             st.markdown("**Anomalies by Date**")

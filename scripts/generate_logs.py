@@ -5,7 +5,12 @@ import uuid
 import requests
 
 USERS = ["alice", "bob", "carol", "dave"]
-RESOURCES = ["crm", "erp", "hr_portal", "code_repo", "payments"]
+RESOURCES = [
+    "User login to app",
+    "Authentication of user via MFA",
+    "Auth service",
+    "Session start",
+]
 LOCATIONS = [
     ("San Francisco, US", 37.7749, -122.4194),
     ("New York, US", 40.7128, -74.0060),
@@ -17,13 +22,19 @@ UA = ["Mozilla/5.0", "Chrome/120", "Safari/16", "Edge/120"]
 
 
 def gen_event(now: datetime, user: str, normal: bool = True) -> dict:
-    loc = random.choice(LOCATIONS) if normal else random.choice(LOCATIONS)
-    location, lat, lon = loc
-    resource = random.choice(RESOURCES)
+    location, lat, lon = random.choice(LOCATIONS)
+    resource = random.choice(RESOURCES) if normal else "Authentication of user via MFA"
     success = True if normal else (random.random() > 0.3)
-    action = "login"
-    device_id = f"device-{user}-{random.randint(1,3)}" if normal else f"new-device-{uuid.uuid4().hex[:6]}"
-    # off-hours anomaly
+    action = random.choice([
+        "user.session.start",
+        "user.authentication.authenticate_user",
+    ]) if normal else random.choice([
+        "user.authentication.auth_via_mfa",
+        "user.authentication.invalid_password",
+    ])
+    device_id = None if random.random() < 0.2 else f"device-{user}-{random.randint(1,3)}"
+    if not normal and random.random() < 0.5:
+        device_id = f"new-device-{uuid.uuid4().hex[:6]}"
     ts = now if normal else now.replace(hour=random.choice([0,1,2,3,4,23]))
     return {
         "event_id": uuid.uuid4().hex,
@@ -38,9 +49,9 @@ def gen_event(now: datetime, user: str, normal: bool = True) -> dict:
         "resource": resource,
         "action": action,
         "success": success,
-        "mfa_used": random.random() > 0.7,
+        "mfa_used": bool(random.random() > 0.7),
         "failure_reason": None if success else "invalid_password",
-        "privilege_level": "user",
+        "privilege_level": random.choice(["user", None]),
     }
 
 

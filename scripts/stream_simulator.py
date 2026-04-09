@@ -21,11 +21,19 @@ UA = ["Mozilla/5.0", "Chrome/120", "Safari/16", "Edge/120"]
 def gen_event(now: datetime, user: str, anomaly_prob: float) -> dict:
     anomalous = random.random() < anomaly_prob
     location, lat, lon = random.choice(LOCATIONS)
-    device_id = f"device-{user}-{random.randint(1,3)}"
+    device_id = None if random.random() < 0.2 else f"device-{user}-{random.randint(1,3)}"
     ts = now if not anomalous else now.replace(hour=random.choice([0, 1, 2, 3, 4, 23]))
     if anomalous and random.random() < 0.5:
         device_id = f"new-device-{uuid.uuid4().hex[:6]}"
     success = not anomalous or random.random() > 0.3
+    action = "user.authentication.auth_via_mfa" if anomalous else random.choice([
+        "user.session.start",
+        "user.authentication.authenticate_user",
+    ])
+    resource = "Authentication of user via MFA" if anomalous else random.choice([
+        "User login to app",
+        "Auth service",
+    ])
     return {
         "event_id": uuid.uuid4().hex,
         "user_id": user,
@@ -36,12 +44,12 @@ def gen_event(now: datetime, user: str, anomaly_prob: float) -> dict:
         "location": location,
         "user_agent": random.choice(UA),
         "device_id": device_id,
-        "resource": random.choice(RESOURCES),
-        "action": "login",
+        "resource": resource,
+        "action": action,
         "success": success,
-        "mfa_used": random.random() > 0.7,
+        "mfa_used": bool(random.random() > 0.7),
         "failure_reason": None if success else "invalid_password",
-        "privilege_level": "user",
+        "privilege_level": random.choice(["user", None]),
     }
 
 

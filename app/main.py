@@ -9,12 +9,21 @@ from ml.detector import AnomalyDetector
 from ml.baseline import build_user_profile
 from alerting.alerts import maybe_send_alert
 from adapters.csv_parser import parse_csv
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from adapters.okta import normalize_okta_event
 import os
 
 app = FastAPI(title="Auth Anomaly Detection PoC")
+
+def _normalize_timestamp(value: str | datetime) -> str:
+    if isinstance(value, datetime):
+        ts = value
+    else:
+        ts = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if ts.tzinfo is not None:
+        ts = ts.astimezone(timezone.utc).replace(tzinfo=None)
+    return ts.isoformat()
 
 init_db()
 detector = AnomalyDetector()
@@ -34,7 +43,9 @@ def _verify_okta_hook_auth(request: Request) -> None:
 def _process(rows: List[Dict[str, Any]], train: bool = True) -> IngestResponse:
     for r in rows:
         if isinstance(r.get("timestamp"), datetime):
-            r["timestamp"] = r["timestamp"].isoformat()
+            r["timestamp"] = _normalize_timestamp(r["timestamp"])
+        else:
+            r["timestamp"] = _normalize_timestamp(r["timestamp"])
     accepted_ids = insert_events(rows)
     conn = connect()
     try:

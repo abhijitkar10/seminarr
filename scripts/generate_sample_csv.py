@@ -17,8 +17,19 @@ USERS = [
     {"id": "carol@corp.com", "lat": 51.5074, "lon": -0.1278,   "loc": "London, UK",         "device": "dev-carol-1"},
 ]
 
-RESOURCES = ["crm", "email", "vpn", "wiki", "hr-portal", "code-repo"]
-ACTIONS = ["login", "access", "authorize"]
+RESOURCES = [
+    "User login to app",
+    "Authentication of user via MFA",
+    "Auth service",
+    "Session start",
+    "Resource access",
+]
+ACTIONS = [
+    "user.session.start",
+    "user.authentication.auth_via_mfa",
+    "user.authentication.authenticate_user",
+    "user.authentication.invalid_password",
+]
 
 FIELDNAMES = [
     "event_id", "user_id", "timestamp", "ip_address",
@@ -38,13 +49,13 @@ def _normal_event(user: dict, ts: datetime) -> dict:
         "longitude": round(user["lon"] + random.gauss(0, 0.01), 6),
         "location": user["loc"],
         "user_agent": "Mozilla/5.0",
-        "device_id": user["device"],
+        "device_id": random.choice([user["device"], None]),
         "resource": random.choice(RESOURCES),
         "action": random.choice(ACTIONS),
         "success": "true",
         "mfa_used": random.choice(["true", "false"]),
-        "failure_reason": "",
-        "privilege_level": "user",
+        "failure_reason": None,
+        "privilege_level": random.choice(["user", None]),
     }
 
 
@@ -62,6 +73,10 @@ def _anomalous_event(user: dict, ts: datetime, kind: str) -> dict:
         evt["failure_reason"] = "invalid_password"
     elif kind == "new_device":
         evt["device_id"] = f"dev-unknown-{uuid.uuid4().hex[:6]}"
+    elif kind == "mfa_auth":
+        evt["action"] = "user.authentication.auth_via_mfa"
+        evt["resource"] = "Authentication of user via MFA"
+        evt["mfa_used"] = "true"
     return evt
 
 
