@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 from pathlib import Path
 import numpy as np
 from data.db import connect, insert_anomaly
@@ -240,3 +240,24 @@ class AnomalyDetector:
             return float(x)
         except Exception:
             return np.nan
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Convenience accessor for the multi-model ensemble
+# ─────────────────────────────────────────────────────────────────────────────
+
+_ensemble_instance: Optional[Any] = None
+
+
+def get_ensemble_detector():
+    """
+    Return a (cached) RBAEnsembleDetector instance.
+    The ensemble covers 6 models trained on Book1-style RBA data:
+      Label Propagation, Label Spreading, Self-Training RF,
+      Self-Training Extra Trees, Isolation Forest, One-Class SVM.
+    """
+    global _ensemble_instance
+    if _ensemble_instance is None:
+        from ml.rba_ensemble import RBAEnsembleDetector
+        _ensemble_instance = RBAEnsembleDetector()
+    return _ensemble_instance
