@@ -157,34 +157,40 @@ class AnomalyDetector:
         
         Returns: (final_risk_score, list_of_reasons)
         
-        Final risk is ensemble_risk scaled to 0-3.0 with adjustments.
+        Risk calibration:
+        - 0.0-0.2: Normal (🟢 Low)
+        - 0.2-0.4: Suspicious (🟡 Medium)
+        - 0.4-0.6: High risk (🟠 High)
+        - 0.6+: Critical (🔴 Critical)
+        
+        Scaled back to 0-1.0 range aligned with ensemble predictions
         """
         reasons = []
-        # Scale ensemble risk to 0-3.0 range for classification
-        risk = ensemble_risk * 3.0
+        # Use ensemble risk directly (0.0-1.0) for better calibration
+        risk = ensemble_risk
 
-        # Add context-based adjustments
+        # Add context-based adjustments (smaller increments for 0-1 scale)
         if feature_row.get("off_hours"):
-            risk += 0.15
+            risk += 0.05
             reasons.append("Off-hours access")
         
         if (feature_row.get("geo_velocity_kmh") or 0) > 900:
-            risk += 0.25
+            risk += 0.08
             reasons.append("Unrealistic geo-velocity")
         
         if (feature_row.get("failure_burst") or 0) > 0.7:
-            risk += 0.20
+            risk += 0.07
             reasons.append("Failure burst before event")
         
         if (feature_row.get("resource_rarity") or 0) > 0.9:
-            risk += 0.15
+            risk += 0.05
             reasons.append("Rare resource access")
         
         if feature_row.get("new_device"):
-            risk += 0.10
+            risk += 0.03
             reasons.append("New device detected")
 
-        return float(np.clip(risk, 0.0, 3.0)), reasons
+        return float(np.clip(risk, 0.0, 1.0)), reasons
 
     def record_anomaly(
         self,

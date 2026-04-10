@@ -575,13 +575,13 @@ with tab_anomalies:
     total_events = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM anomalies")
     total_anomalies = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 2.5")
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.60")
     critical = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 1.8 AND risk < 2.5")
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.40 AND risk < 0.60")
     high = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 1.2 AND risk < 1.8")
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.20 AND risk < 0.40")
     medium = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk < 1.2")
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk < 0.20")
     low = cursor.fetchone()[0]
     conn.close()
     
@@ -612,13 +612,13 @@ with tab_anomalies:
         })
     df = pd.DataFrame(anom_list)
     if not df.empty:
-        # Risk level color badges (Ensemble-based, 0-3.0 scale)
+        # Risk level color badges (0-1.0 scale, calibrated to ensemble)
         def risk_level(risk: float) -> str:
-            if risk >= 2.0:
+            if risk >= 0.60:
                 return "🔴 Critical"
-            elif risk >= 1.5:
+            elif risk >= 0.40:
                 return "🟠 High"
-            elif risk >= 1.0:
+            elif risk >= 0.20:
                 return "🟡 Medium"
             return "🟢 Low"
 
