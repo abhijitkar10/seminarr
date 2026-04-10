@@ -534,6 +534,51 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
                             scored += 1
                         st.success(f"✓ Scored **{scored}** events | 🚨 Flagged **{anomalies_detected}** anomalies")
 
+    st.divider()
+    st.subheader("📊 Pipeline Status Diagnostics")
+    
+    # Check each step
+    conn = db.connect()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM events")
+    event_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM features")
+    feature_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM anomalies")
+    anomaly_count = cursor.fetchone()[0]
+    conn.close()
+    
+    ensemble_det = rba_ensemble_mod.RBAEnsembleDetector()
+    is_trained = ensemble_det.is_trained
+    
+    # Status indicators
+    col_d1, col_d2, col_d3, col_d4 = st.columns(4)
+    
+    with col_d1:
+        if event_count > 0:
+            st.success(f"✅ Events Loaded\n**{event_count:,}** rows")
+        else:
+            st.error("❌ No Events\nClick 'Load Book1.xlsx'")
+    
+    with col_d2:
+        if feature_count > 0:
+            st.success(f"✅ Features Computed\n**{feature_count:,}** rows")
+        else:
+            st.error("❌ No Features\nClick 'Load Book1.xlsx'")
+    
+    with col_d3:
+        if is_trained:
+            st.success(f"✅ Model Trained\nThreshold: 0.6148")
+        else:
+            st.error("❌ Model Not Trained\nClick 'Train Model'")
+    
+    with col_d4:
+        if anomaly_count > 0:
+            st.success(f"✅ Anomalies Detected\n**{anomaly_count:,}** flagged")
+        else:
+            st.error("❌ No Anomalies\nClick 'Score All Events'")
+
 # ========================== ACTIVITY TAB ==========================
 with tab_activity:
     st.subheader("Recent Authentication Events")
