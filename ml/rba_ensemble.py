@@ -1,12 +1,10 @@
 """
 RBA Multi-Model Ensemble Detector
-Integrates 6 models from RBA_Anomaly_Detection_Final_v5:
+Integrates 4 models from Book1.xlsx RBA dataset:
   1. Label Propagation     (semi-supervised)
   2. Label Spreading       (semi-supervised)
   3. Self-Training RF      (semi-supervised)
   4. Self-Training ET      (semi-supervised)
-  5. Isolation Forest      (unsupervised)
-  6. One-Class SVM         (unsupervised)
 
 Training: call train(df, label_column)
 Scoring : call score_df(df) for batch, or score_event(row_dict) for single events.
@@ -28,7 +26,6 @@ warnings.filterwarnings("ignore")
 from sklearn.decomposition import PCA
 from sklearn.ensemble import (
     ExtraTreesClassifier,
-    IsolationForest,
     RandomForestClassifier,
 )
 from sklearn.impute import SimpleImputer
@@ -47,7 +44,6 @@ from sklearn.semi_supervised import (
     LabelSpreading,
     SelfTrainingClassifier,
 )
-from sklearn.svm import OneClassSVM
 
 # ── Data paths ────────────────────────────────────────────────────────────────
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -60,8 +56,6 @@ MODEL_PATHS: Dict[str, Path] = {
     "ls":    _DATA_DIR / "rba_ls_model.joblib",
     "st_rf": _DATA_DIR / "rba_st_rf_model.joblib",
     "st_et": _DATA_DIR / "rba_st_et_model.joblib",
-    "iso":   _DATA_DIR / "rba_iso_model.joblib",
-    "ocsvm": _DATA_DIR / "rba_ocsvm_model.joblib",
 }
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -108,7 +102,7 @@ def engineer(
     fit_objects: Optional[Dict[str, Any]] = None,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """
-    Build feature matrix from a Book1-style RBA dataframe.
+    Build feature matrix from a Book1 RBA dataframe.
     Pass fit_objects=None to fit (train set); pass a returned dict to transform (test set).
     Returns (feature_df, fit_objects).
     """
@@ -236,7 +230,7 @@ class RBAEnsembleDetector:
 
     @property
     def model_names(self) -> List[str]:
-        return ["lp", "ls", "st_rf", "st_et", "iso", "ocsvm"]
+        return ["lp", "ls", "st_rf", "st_et"]
 
     @property
     def display_names(self) -> Dict[str, str]:
@@ -245,8 +239,6 @@ class RBAEnsembleDetector:
             "ls":    "Label Spreading",
             "st_rf": "Self-Training Random Forest",
             "st_et": "Self-Training Extra Trees",
-            "iso":   "Isolation Forest",
-            "ocsvm": "One-Class SVM",
         }
 
     def train(
@@ -255,7 +247,7 @@ class RBAEnsembleDetector:
         label_column: str = "Is Attack IP",
     ) -> Dict[str, Any]:
         """
-        Train all 6 models on *df* (Book1-style DataFrame).
+        Train all 4 models on *df* (Book1 DataFrame).
         Returns a dict with per-model and ensemble metrics on the held-out test set.
         """
         np.random.seed(RANDOM_STATE)
@@ -355,32 +347,7 @@ class RBAEnsembleDetector:
         )
         st_et.fit(X_train_scaled, y_semi)
 
-        print("Training Isolation Forest...")
-        iso = IsolationForest(
-            n_estimators=300,
-            contamination=float(y_train.mean()),
-            max_features=1.0,
-            n_jobs=-1,
-            random_state=RANDOM_STATE,
-        )
-        iso.fit(X_train_scaled)
-        iso_raw_train  = -iso.decision_function(X_train_scaled)
-        iso_min, iso_max = float(iso_raw_train.min()), float(iso_raw_train.max())
-        iso_score_train = ((iso_raw_train - iso_min) / (iso_max - iso_min + 1e-9)).clip(0, 1)
-        iso_raw_test    = -iso.decision_function(X_test_scaled)
-        iso_score_test  = ((iso_raw_test  - iso_min) / (iso_max - iso_min + 1e-9)).clip(0, 1)
-
-        print("Training One-Class SVM...")
-        normal_idx = np.where(y_train == 0)[0]
-        ocsvm = OneClassSVM(kernel="rbf", nu=0.10, gamma="scale")
-        ocsvm.fit(X_train_scaled[normal_idx])
-        ocs_raw_train   = -ocsvm.decision_function(X_train_scaled)
-        ocs_min, ocs_max = float(ocs_raw_train.min()), float(ocs_raw_train.max())
-        ocs_score_train = ((ocs_raw_train - ocs_min) / (ocs_max - ocs_min + 1e-9)).clip(0, 1)
-        ocs_raw_test    = -ocsvm.decision_function(X_test_scaled)
-        ocs_score_test  = ((ocs_raw_test  - ocs_min) / (ocs_max - ocs_min + 1e-9)).clip(0, 1)
-
-        # ── 7. Derive ensemble weights from labelled validation AP ────────
+        # ── 7. Derive ensemble weights from labelled validation AP (4 models) ──
         def _safe_ap(y: np.ndarray, s: np.ndarray) -> float:
             try:
                 return max(float(average_precision_score(y, s)), 0.01)
@@ -391,18 +358,12 @@ class RBAEnsembleDetector:
         val_ls  = np.nan_to_num(ls.predict_proba(lab_X_pca)[:, 1], nan=0.0)
         val_st  = st_rf.predict_proba(lab_X)[:, 1]
         val_et  = st_et.predict_proba(lab_X)[:, 1]
-        val_iso_r = -iso.decision_function(lab_X)
-        val_iso = ((val_iso_r - iso_min) / (iso_max - iso_min + 1e-9)).clip(0, 1)
-        val_ocs_r = -ocsvm.decision_function(lab_X)
-        val_ocs = ((val_ocs_r - ocs_min) / (ocs_max - ocs_min + 1e-9)).clip(0, 1)
 
         w = {
             "lp":    _safe_ap(lab_y, val_lp),
             "ls":    _safe_ap(lab_y, val_ls),
             "st_rf": _safe_ap(lab_y, val_st),
             "st_et": _safe_ap(lab_y, val_et),
-            "iso":   _safe_ap(lab_y, val_iso),
-            "ocsvm": _safe_ap(lab_y, val_ocs),
         }
         w_tot = sum(w.values())
         weights = {k: v / w_tot for k, v in w.items()}
@@ -413,14 +374,10 @@ class RBAEnsembleDetector:
         st_test   = st_rf.predict_proba(X_test_scaled)[:, 1]
         et_test   = st_et.predict_proba(X_test_scaled)[:, 1]
 
-        risk_test = self._ensemble_score(
-            lp_test, ls_test, st_test, et_test, iso_score_test, ocs_score_test, weights
-        )
+        risk_test = self._ensemble_score(lp_test, ls_test, st_test, et_test, weights)
 
         # Threshold from labelled val
-        val_risk = self._ensemble_score(
-            val_lp, val_ls, val_st, val_et, val_iso, val_ocs, weights
-        )
+        val_risk = self._ensemble_score(val_lp, val_ls, val_st, val_et, weights)
         prec_v, rec_v, thresh_v = precision_recall_curve(lab_y, val_risk)
         f1_v = 2 * prec_v * rec_v / (prec_v + rec_v + 1e-9)
         best_thresh = float(np.clip(thresh_v[np.argmax(f1_v[:-1])], 0.0, 1.0))
@@ -451,8 +408,6 @@ class RBAEnsembleDetector:
                 "ls":    _model_metrics("ls",    ls_test),
                 "st_rf": _model_metrics("st_rf", st_test),
                 "st_et": _model_metrics("st_et", et_test),
-                "iso":   _model_metrics("iso",   iso_score_test),
-                "ocsvm": _model_metrics("ocsvm", ocs_score_test),
             },
             "ensemble": {
                 "roc_auc":  float(roc_auc_score(y_test, risk_test)),
@@ -464,8 +419,7 @@ class RBAEnsembleDetector:
         }
 
         # ── 10. Persist state ─────────────────────────────────────────────
-        self.models        = {"lp": lp, "ls": ls, "st_rf": st_rf,
-                               "st_et": st_et, "iso": iso, "ocsvm": ocsvm}
+        self.models        = {"lp": lp, "ls": ls, "st_rf": st_rf, "st_et": st_et}
         self.weights       = weights
         self.best_threshold = best_thresh
         self.metrics       = metrics
@@ -474,8 +428,6 @@ class RBAEnsembleDetector:
         self._imputer      = imputer
         self._scaler       = scaler
         self._pca          = pca
-        self._iso_min, self._iso_max = iso_min, iso_max
-        self._ocs_min, self._ocs_max = ocs_min, ocs_max
         self.trained       = True
 
         self.save()
@@ -497,10 +449,6 @@ class RBAEnsembleDetector:
             raise RuntimeError("Model not trained. Call train() first.")
 
         df_fe, _ = engineer(df, fit_objects=self._fit_objects)
-        for col in self.feature_names:
-            if col not in df_fe.columns:
-                df_fe[col] = 0.0
-
         X_imp    = self._imputer.transform(df_fe[self.feature_names].values)
         X_scaled = self._scaler.transform(X_imp)
         X_pca    = self._pca.transform(X_scaled)
@@ -509,20 +457,14 @@ class RBAEnsembleDetector:
         ls_s   = np.nan_to_num(self.models["ls"].predict_proba(X_pca)[:, 1], nan=0.0)
         st_s   = self.models["st_rf"].predict_proba(X_scaled)[:, 1]
         et_s   = self.models["st_et"].predict_proba(X_scaled)[:, 1]
-        iso_r  = -self.models["iso"].decision_function(X_scaled)
-        iso_s  = ((iso_r - self._iso_min) / (self._iso_max - self._iso_min + 1e-9)).clip(0, 1)
-        ocs_r  = -self.models["ocsvm"].decision_function(X_scaled)
-        ocs_s  = ((ocs_r - self._ocs_min) / (self._ocs_max - self._ocs_min + 1e-9)).clip(0, 1)
 
-        risk = self._ensemble_score(lp_s, ls_s, st_s, et_s, iso_s, ocs_s, self.weights)
+        risk = self._ensemble_score(lp_s, ls_s, st_s, et_s, self.weights)
 
         out = df.copy().reset_index(drop=True)
         out["score_lp"]    = lp_s
         out["score_ls"]    = ls_s
         out["score_st_rf"] = st_s
         out["score_st_et"] = et_s
-        out["score_iso"]   = iso_s
-        out["score_ocsvm"] = ocs_s
         out["risk_score"]  = risk
         out["is_anomaly"]  = (risk >= self.best_threshold).astype(int)
         out["alert_level"] = pd.cut(
@@ -535,7 +477,7 @@ class RBAEnsembleDetector:
 
     def score_event(self, row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
         """
-        Score a single event dict (Book1-style fields).
+        Score a single event dict (Book2-style fields).
         Returns (risk_score, per_model_scores).
         """
         df_single = pd.DataFrame([row])
@@ -546,8 +488,6 @@ class RBAEnsembleDetector:
             "ls":    float(scored["score_ls"].iloc[0]),
             "st_rf": float(scored["score_st_rf"].iloc[0]),
             "st_et": float(scored["score_st_et"].iloc[0]),
-            "iso":   float(scored["score_iso"].iloc[0]),
-            "ocsvm": float(scored["score_ocsvm"].iloc[0]),
         }
         return risk, per_model
 
@@ -623,8 +563,6 @@ class RBAEnsembleDetector:
         ls: np.ndarray,
         st: np.ndarray,
         et: np.ndarray,
-        iso: np.ndarray,
-        ocs: np.ndarray,
         weights: Dict[str, float],
     ) -> np.ndarray:
         return (
@@ -632,15 +570,13 @@ class RBAEnsembleDetector:
             + weights["ls"]    * ls
             + weights["st_rf"] * st
             + weights["st_et"] * et
-            + weights["iso"]   * iso
-            + weights["ocsvm"] * ocs
         )
 
     @staticmethod
     def _print_summary(metrics: Dict[str, Any]) -> None:
         ens = metrics["ensemble"]
         print("\n" + "=" * 62)
-        print("  RBA ENSEMBLE — TEST SET RESULTS")
+        print("  RBA ENSEMBLE (4 MODELS) — TEST SET RESULTS")
         print("=" * 62)
         print(f"  Ensemble ROC-AUC  : {ens['roc_auc']:.4f}")
         print(f"  Ensemble F1-Score : {ens['f1']:.4f}")
@@ -656,8 +592,6 @@ class RBAEnsembleDetector:
                 "ls": "Label Spreading",
                 "st_rf": "Self-Training RF",
                 "st_et": "Self-Training ET",
-                "iso":   "Isolation Forest",
-                "ocsvm": "One-Class SVM",
             }[name]
             print(
                 f"  {dname:<30} {m['roc_auc']:>8.4f}"

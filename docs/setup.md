@@ -1,31 +1,54 @@
 # Setup Guide
 
+## ⚡ Quick Start (30 seconds)
+
+**Just want to see it work?**
+
+```bash
+cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
+source .venv/bin/activate
+streamlit run dashboard/app.py --server.port 8501
+```
+
+Then open: **http://localhost:8501**
+
+Pre-trained models are included! Start with 🔍 **Anomaly Explorer** tab.
+
+---
+
 ## Option 1: Local (venv)
 
 ### Prerequisites
 - Python 3.10+
+- macOS, Linux, or Windows
 
 ### Steps
 
 ```bash
 # Clone / navigate to project
-cd seminarr
+cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 
 # Create virtual environment
-python -m venv venv
+python3 -m venv .venv
 
 # Activate
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # Linux/Mac
+source .venv/bin/activate        # Mac/Linux
+.venv\Scripts\activate           # Windows
 
 # Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
-
-# Generate sample CSV (optional)
-python scripts/generate_sample_csv.py
 ```
 
-### Run
+### Run Dashboard Only (Recommended)
+
+```bash
+streamlit run dashboard/app.py --server.port 8501
+```
+
+Then open: http://localhost:8501
+
+### Run API + Dashboard (Optional, for Okta integration)
 
 Terminal 1 — API:
 ```bash
@@ -37,9 +60,11 @@ Terminal 2 — Dashboard:
 streamlit run dashboard/app.py --server.port 8501
 ```
 
-### Environment configuration
+Access:
+- Dashboard: http://localhost:8501
+- API Swagger: http://localhost:8000/docs
 
-Copy the example environment file and set your Okta hook secret:
+### Environment Configuration (Optional, for Okta)
 
 ```bash
 cp .env.example .env
@@ -52,9 +77,7 @@ OKTA_EVENT_HOOK_AUTH_SECRET=your-okta-hook-secret
 OKTA_EVENT_HOOK_AUTH_HEADER=authorization
 ```
 
-### Access
-- Dashboard: http://localhost:8501
-- API Swagger: http://localhost:8000/docs
+**Do NOT commit your real `.env` file to source control.**
 
 ---
 
@@ -66,6 +89,7 @@ OKTA_EVENT_HOOK_AUTH_HEADER=authorization
 ### Steps
 
 ```bash
+cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 docker-compose up --build
 ```
 
