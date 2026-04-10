@@ -577,30 +577,12 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
 with tab_activity:
     st.subheader("Recent Authentication Events")
     
-    # Get total counts
+    # Get total count for the sample subheader
     conn = db.connect()
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM events")
     total_events = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies")
-    total_anomalies = cursor.fetchone()[0]
-    normal_events = total_events - total_anomalies
-    cursor.execute("SELECT COUNT(*) FROM events WHERE success = 1")
-    successful = cursor.fetchone()[0]
-    failed = total_events - successful
     conn.close()
-    
-    # Display statistics
-    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    col_m1.metric("🔢 Total Events", f"{total_events:,}")
-    col_m2.metric("🚨 Model Flagged", f"{total_anomalies:,} (TP+FP)")
-    col_m3.metric("✅ Normal (model classification)", f"{normal_events:,}")
-    col_m4.metric("📊 Flagged Rate", f"{(total_anomalies/total_events*100):.1f}%" if total_events > 0 else "0%")
-    
-    st.divider()
-    col_s1, col_s2 = st.columns(2)
-    col_s1.metric("✓ Successful Logins", f"{successful:,}")
-    col_s2.metric("✗ Failed Logins", f"{failed:,}")
 
     rows = db.fetch_recent_events(limit=500)
     df = pd.DataFrame([dict(r) for r in rows])
