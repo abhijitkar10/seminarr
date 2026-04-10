@@ -533,9 +533,9 @@ with tab_activity:
     # Display statistics
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
     col_m1.metric("🔢 Total Events", f"{total_events:,}")
-    col_m2.metric("🚨 Total Anomalies", f"{total_anomalies:,}")
-    col_m3.metric("✅ Normal Events", f"{normal_events:,}")
-    col_m4.metric("📊 Anomaly Rate", f"{(total_anomalies/total_events*100):.1f}%" if total_events > 0 else "0%")
+    col_m2.metric("🚨 Model Flagged", f"{total_anomalies:,} (TP+FP)")
+    col_m3.metric("✅ Normal (model classification)", f"{normal_events:,}")
+    col_m4.metric("📊 Flagged Rate", f"{(total_anomalies/total_events*100):.1f}%" if total_events > 0 else "0%")
     
     st.divider()
     col_s1, col_s2 = st.columns(2)
