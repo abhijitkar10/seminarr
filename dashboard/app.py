@@ -24,6 +24,12 @@ SAMPLE_CSV_PATH = ROOT / "data" / "sample_logs.csv"
 
 db.init_db()
 
+# Clear anomalies on dashboard startup (fresh state)
+conn = db.connect()
+conn.execute("DELETE FROM anomalies")
+conn.commit()
+conn.close()
+
 # ========================== SIDEBAR: Model Info ==========================
 st.sidebar.header("🤖 Active Models")
 
@@ -584,31 +590,36 @@ with tab_anomalies:
     total_events = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM anomalies")
     total_anomalies = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.60")
-    critical = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.40 AND risk < 0.60")
-    high = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.20 AND risk < 0.40")
-    medium = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk < 0.20")
-    low = cursor.fetchone()[0]
-    conn.close()
     
-    # Display comprehensive statistics
-    st.subheader("📊 Anomaly Statistics")
-    col_a1, col_a2, col_a3, col_a4 = st.columns(4)
-    col_a1.metric("🔴 Critical (risk ≥ 0.60)", f"{critical:,}")
-    col_a2.metric("🟠 High (0.40-0.60)", f"{high:,}")
-    col_a3.metric("🟡 Medium (0.20-0.40)", f"{medium:,}")
-    col_a4.metric("🟢 Low (< 0.20)", f"{low:,}")
-    
-    st.divider()
-    
-    # Show model detection vs reality
-    st.markdown("""
+    if total_anomalies == 0:
+        st.info("❌ No anomalies yet. Click '🔍 Score All Events' in the 4-Model Ensemble tab to start detection.")
+        conn.close()
+    else:
+        cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.60")
+        critical = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.40 AND risk < 0.60")
+        high = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 0.20 AND risk < 0.40")
+        medium = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk < 0.20")
+        low = cursor.fetchone()[0]
+        conn.close()
+        
+        # Display comprehensive statistics
+        st.subheader("📊 Anomaly Statistics")
+        col_a1, col_a2, col_a3, col_a4 = st.columns(4)
+        col_a1.metric("🔴 Critical (risk ≥ 0.60)", f"{critical:,}")
+        col_a2.metric("🟠 High (0.40-0.60)", f"{high:,}")
+        col_a3.metric("🟡 Medium (0.20-0.40)", f"{medium:,}")
+        col_a4.metric("🟢 Low (< 0.20)", f"{low:,}")
+        
+        st.divider()
+        
+        # Show model detection vs reality
+        st.markdown("""
 ### ⚠️ Important: Model Predictions vs Reality
-    """)
-    st.warning("""
+        """)
+        st.warning("""
 **Model detects:** TP (True Positives) + FP (False Positives)
 - **TP = 259** real attacks correctly identified ✅
 - **FP = 55** normal events incorrectly flagged ❌
@@ -620,62 +631,60 @@ with tab_anomalies:
 - **Real attacks = 421** total in dataset
 
 **Detection Rate = 259 / 421 = 61.5%** — We catch 61.5% of real attacks
-    """)
-    
-    col_a5, col_a6, col_a7 = st.columns(3)
-    col_a5.metric("🚨 Model Flagged (TP+FP)", f"{total_anomalies:,}")
-    col_a6.metric("✅ Correct Detections (TP)", "259")
-    col_a7.metric("📈 Detection Rate", "61.5%")
-    
-    st.divider()
-    st.subheader("📋 All Detected Anomalies")
-    
-    rows = db.fetch_anomalies(limit=500)
-    anom_list = []
-    for r in rows:
-        anom_list.append({
-            **{k: r[k] for k in r.keys() if k not in ("reasons", "contributions")},
-            "reasons": ", ".join(json.loads(r["reasons"])),
-            "contributions": json.loads(r["contributions"]),
-        })
-    df = pd.DataFrame(anom_list)
-    if not df.empty:
-        # Risk level color badges (0-1.0 scale, calibrated to ensemble)
-        def risk_level(risk: float) -> str:
-            if risk >= 0.60:
-                return "🔴 Critical"
-            elif risk >= 0.40:
-                return "🟠 High"
-            elif risk >= 0.20:
-                return "🟡 Medium"
-            return "🟢 Low"
-
-        df["risk_level"] = df["risk"].apply(risk_level)
-        display_cols = [c for c in df.columns if c != "contributions"]
-        st.dataframe(df[display_cols], use_container_width=True)
-
-        st.subheader("🔍 Model Contributions (Per-Model Scores)")
-        idx = st.number_input("Row index to inspect", min_value=0, max_value=len(df) - 1, value=0)
-        contrib = df.iloc[idx]["contributions"]
+        """)
         
-        # Display ensemble model contributions
-        if isinstance(contrib, dict):
-            model_scores = {
-                "Label Propagation": contrib.get("lp", 0),
-                "Label Spreading": contrib.get("ls", 0),
-                "Self-Training RF": contrib.get("st_rf", 0),
-                "Self-Training ET": contrib.get("st_et", 0),
-            }
-            st.bar_chart(pd.Series(model_scores).sort_values(ascending=False))
+        col_a5, col_a6, col_a7 = st.columns(3)
+        col_a5.metric("🚨 Model Flagged (TP+FP)", f"{total_anomalies:,}")
+        col_a6.metric("✅ Correct Detections (TP)", "259")
+        col_a7.metric("📈 Detection Rate", "61.5%")
+        
+        st.divider()
+        st.subheader("📋 All Detected Anomalies")
+        
+        rows = db.fetch_anomalies(limit=500)
+        anom_list = []
+        for r in rows:
+            anom_list.append({
+                **{k: r[k] for k in r.keys() if k not in ("reasons", "contributions")},
+                "reasons": ", ".join(json.loads(r["reasons"])),
+                "contributions": json.loads(r["contributions"]),
+            })
+        df = pd.DataFrame(anom_list)
+        if not df.empty:
+            # Risk level color badges (0-1.0 scale, calibrated to ensemble)
+            def risk_level(risk: float) -> str:
+                if risk >= 0.60:
+                    return "🔴 Critical"
+                elif risk >= 0.40:
+                    return "🟠 High"
+                elif risk >= 0.20:
+                    return "🟡 Medium"
+                return "🟢 Low"
+
+            df["risk_level"] = df["risk"].apply(risk_level)
+            display_cols = [c for c in df.columns if c != "contributions"]
+            st.dataframe(df[display_cols], use_container_width=True)
+
+            st.subheader("🔍 Model Contributions (Per-Model Scores)")
+            idx = st.number_input("Row index to inspect", min_value=0, max_value=len(df) - 1, value=0)
+            contrib = df.iloc[idx]["contributions"]
             
-            st.caption("""
+            # Display ensemble model contributions
+            if isinstance(contrib, dict):
+                model_scores = {
+                    "Label Propagation": contrib.get("lp", 0),
+                    "Label Spreading": contrib.get("ls", 0),
+                    "Self-Training RF": contrib.get("st_rf", 0),
+                    "Self-Training ET": contrib.get("st_et", 0),
+                }
+                st.bar_chart(pd.Series(model_scores).sort_values(ascending=False))
+                
+                st.caption("""
 **Ensemble Scores (0.0-1.0):**
 - Each model independently votes on anomaly likelihood
 - Higher score = more anomalous
 - Final risk = weighted average of all 4 models + context adjustments
-            """)
-    else:
-        st.info("No anomalies detected yet. Upload data, train the model, then score.")
+                """)
 
 # ========================== USERS TAB ==========================
 with tab_users:
