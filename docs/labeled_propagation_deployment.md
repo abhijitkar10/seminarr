@@ -20,6 +20,7 @@ LABELED PROPAGATION (PRODUCTION)
 ## Quick Start: Using Labeled Propagation
 
 ### 1. Load Pre-trained Model
+
 ```python
 from ml.detector import AnomalyDetector
 
@@ -32,6 +33,7 @@ if detector.is_trained:
 ```
 
 ### 2. Score Events in Real-time
+
 ```python
 feature_row = {
     "hour": 23,                    # Midnight
@@ -53,6 +55,7 @@ if risk > 1.0:
 ```
 
 ### 3. Batch Processing
+
 ```python
 import numpy as np
 
@@ -72,6 +75,7 @@ predictions, probabilities = detector.predict(X_batch)
 ## Integrating with Existing Code
 
 ### Load Labeled Propagation model by default
+
 ```python
 # In ml/detector.py
 from ml.detector import AnomalyDetector
@@ -82,6 +86,7 @@ def __init__(self):
 ```
 
 ### Dashboard integration
+
 ```python
 # In dashboard/app.py
 import streamlit as st
@@ -96,11 +101,11 @@ st.sidebar.success("✓ 82.14% Recall | 73.60% Accuracy")
 
 ## Model Files Reference
 
-| File | Purpose | Size |
-|------|---------|------|
-| `data/model.joblib` | Labeled Propagation model | ~5MB |
-| `data/labeled_propagation_scaler.joblib` | Feature scaler (StandardScaler) | ~1KB |
-| `data/labeled_propagation_encoders.joblib` | Categorical encoders | ~10KB |
+| File                                       | Purpose                         | Size  |
+| ------------------------------------------ | ------------------------------- | ----- |
+| `data/model.joblib`                        | Labeled Propagation model       | ~5MB  |
+| `data/labeled_propagation_scaler.joblib`   | Feature scaler (StandardScaler) | ~1KB  |
+| `data/labeled_propagation_encoders.joblib` | Categorical encoders            | ~10KB |
 
 ---
 
@@ -130,11 +135,13 @@ Threshold: Optimized for 82% recall at 22% precision
 ## Retraining with New Data
 
 ### Train on new labeled dataset
+
 ```bash
 python scripts/train_on_book2.py
 ```
 
 ### Expected training time
+
 - Labeled Propagation: ~30-60 seconds for 49,999 samples
 - First-time: ~180 seconds including preprocessing
 
@@ -143,6 +150,7 @@ python scripts/train_on_book2.py
 ## Monitoring and Maintenance
 
 ### Daily Health Check
+
 ```python
 # Verify model is loaded and working
 detector = AnomalyDetector()
@@ -155,6 +163,7 @@ print(f"Expected recall: 82.14%")
 ```
 
 ### When to Retrain
+
 - [ ] New attack patterns emerge
 - [ ] Detection recall drops below 75%
 - [ ] Monthly or quarterly with new labeled data
@@ -165,6 +174,7 @@ print(f"Expected recall: 82.14%")
 ## Support & Debugging
 
 ### Check if model is properly loaded
+
 ```python
 detector = AnomalyDetector()
 print(f"Is trained: {detector.is_trained}")
@@ -172,6 +182,7 @@ print(f"Feature count: {detector.n_features}")
 ```
 
 ### Troubleshooting
+
 ```python
 # If model not found
 if not detector.is_trained:
@@ -187,7 +198,7 @@ if not detector.is_trained:
 - Full evaluation: See [Model Evaluation Report](../docs/model_evaluation_report.md)
 - Code examples: See [examples/model_usage.py](../examples/model_usage.py)
 - Dataset: Book1.xlsx (4,999 authentication logs)
-- Training scripts: 
+- Training scripts:
   - `scripts/train_labeled_propagation.py`
   - `scripts/train_both_models.py`
   - `scripts/compare_models.py`

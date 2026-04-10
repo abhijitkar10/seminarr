@@ -10,18 +10,19 @@ Your anomaly detection system now uses a **4-Model Weighted Ensemble** instead o
 
 The ensemble combines **four semi-supervised learning models**:
 
-| Model | Type | Input | Purpose |
-|-------|------|-------|---------|
-| **Label Propagation** | Graph-based SSL | PCA-reduced features | Leverages manifold structure |
-| **Label Spreading** | Iterative SSL | PCA-reduced features | Smooth label propagation with regularization |
-| **Self-Training Random Forest** | Ensemble SSL | Scaled features | Tree-based confidence learning |
-| **Self-Training Extra Trees** | Ensemble SSL | Scaled features | Highly randomized trees for robustness |
+| Model                           | Type            | Input                | Purpose                                      |
+| ------------------------------- | --------------- | -------------------- | -------------------------------------------- |
+| **Label Propagation**           | Graph-based SSL | PCA-reduced features | Leverages manifold structure                 |
+| **Label Spreading**             | Iterative SSL   | PCA-reduced features | Smooth label propagation with regularization |
+| **Self-Training Random Forest** | Ensemble SSL    | Scaled features      | Tree-based confidence learning               |
+| **Self-Training Extra Trees**   | Ensemble SSL    | Scaled features      | Highly randomized trees for robustness       |
 
 ---
 
 ## Risk Scoring Pipeline
 
 ### Step 1: Feature Engineering
+
 ```
 Raw Event (user_id, timestamp, IP, etc.)
     ↓
@@ -40,6 +41,7 @@ Reduce dimensionality (PCA 15 components)
 ```
 
 ### Step 2: Model Scoring
+
 Each of the 4 models independently produces a probability (0.0 - 1.0):
 
 ```
@@ -53,6 +55,7 @@ Event Features (PCA/Scaled)
 **Interpretation:** Higher score = model thinks event is more anomalous
 
 ### Step 3: Weighted Averaging
+
 Weights are learned from the **labeled validation data** (40% of training set):
 
 ```python
@@ -65,6 +68,7 @@ ensemble_risk = (
 ```
 
 **Weight derivation:** Average Precision (AP) on labeled validation set
+
 - Model with AP=0.85 → weight ≈ 0.30
 - Model with AP=0.70 → weight ≈ 0.25
 - Model with AP=0.60 → weight ≈ 0.20
@@ -73,6 +77,7 @@ ensemble_risk = (
 **Result:** `ensemble_risk` (0.0 - 1.0)
 
 ### Step 4: Scale & Context Adjustments
+
 ```python
 # Scale to 0-3.0 range
 risk = ensemble_risk × 3.0
@@ -96,12 +101,12 @@ risk = clip(risk, 0.0, 3.0)
 
 Based on final risk score (0.0 - 3.0):
 
-| Risk Level | Threshold | Meaning | Action |
-|-----------|-----------|---------|--------|
-| 🔴 **Critical** | ≥ 2.0 | Highly confident attack | Alert immediately |
-| 🟠 **High** | ≥ 1.5 | Probable attack | Alert soon |
-| 🟡 **Medium** | ≥ 1.0 | Suspicious activity | Log for review |
-| 🟢 **Low** | < 1.0 | Likely normal | No action |
+| Risk Level      | Threshold | Meaning                 | Action            |
+| --------------- | --------- | ----------------------- | ----------------- |
+| 🔴 **Critical** | ≥ 2.0     | Highly confident attack | Alert immediately |
+| 🟠 **High**     | ≥ 1.5     | Probable attack         | Alert soon        |
+| 🟡 **Medium**   | ≥ 1.0     | Suspicious activity     | Log for review    |
+| 🟢 **Low**      | < 1.0     | Likely normal           | No action         |
 
 ---
 
@@ -129,6 +134,7 @@ Based on final risk score (0.0 - 3.0):
 ### Visualization
 
 **Per-Model Scores** (Feature Contributions tab):
+
 - Shows bar chart of each model's probability (lp, ls, st_rf, st_et)
 - Higher bar = model voted stronger for anomaly
 - Helps debug which models agree/disagree
@@ -138,30 +144,35 @@ Based on final risk score (0.0 - 3.0):
 ## Key Metrics Explained
 
 ### ROC-AUC (Receiver Operating Characteristic - Area Under Curve)
+
 - **Range:** 0.0 - 1.0
 - **Meaning:** Probability model ranks attack higher than normal
 - **Threshold:** >0.8 is excellent, >0.7 is good
 - **Formula:** Area under ROC curve plotting TPR vs FPR
 
 ### F1-Score
+
 - **Range:** 0.0 - 1.0
 - **Meaning:** Harmonic mean of precision and recall
 - **Formula:** 2 × (precision × recall) / (precision + recall)
 - **Use case:** Balances TP/FP tradeoff (good for imbalanced datasets)
 
 ### Recall
+
 - **Range:** 0.0 - 1.0
 - **Meaning:** % of actual attacks caught
 - **Formula:** TP / (TP + FN)
 - **Security context:** Higher is critical (catch more attacks)
 
 ### Accuracy
+
 - **Range:** 0.0 - 1.0
 - **Meaning:** % correct predictions overall
 - **Formula:** (TP + TN) / Total
 - **Caveat:** Misleading for imbalanced data (8.4% attacks)
 
 ### Average Precision (Weight Source)
+
 - **Range:** 0.0 - 1.0
 - **Meaning:** Average precision at different recall levels
 - **Use:** Determines ensemble model weights
@@ -172,6 +183,7 @@ Based on final risk score (0.0 - 3.0):
 ## Example Walkthrough
 
 ### Event 1: Normal Login
+
 ```
 Raw Event: User "alice", 2pm, NYC, Regular device
 
@@ -185,7 +197,7 @@ Model Scores:
   LS:       0.12
   ST_RF:    0.18
   ST_ET:    0.14
-  
+
 Weighted Average: 0.15×0.25 + 0.12×0.26 + 0.18×0.24 + 0.14×0.25 = 0.15
 
 Scaled Risk: 0.15 × 3.0 = 0.45
@@ -198,6 +210,7 @@ Classification: 🟢 LOW (< 1.0)
 ```
 
 ### Event 2: Suspicious Attack
+
 ```
 Raw Event: User "alice", 3am, Russia, New device, 5 failed logins
 
@@ -211,7 +224,7 @@ Model Scores:
   LS:       0.89
   ST_RF:    0.76
   ST_ET:    0.80
-  
+
 Weighted Average: 0.82×0.25 + 0.89×0.26 + 0.76×0.24 + 0.80×0.25 = 0.82
 
 Scaled Risk: 0.82 × 3.0 = 2.46
@@ -221,7 +234,7 @@ Context Adjustments:
   + 0.25 (high geo-velocity: 1200 km/h)
   + 0.20 (failure burst)
   + 0.10 (new device)
-  
+
 Total Adjustments: +0.70
 
 Final Risk: 2.46 + 0.70 = 3.16 → clipped to 3.0
@@ -235,23 +248,28 @@ Reasons: ["Off-hours access", "Unrealistic geo-velocity", "Failure burst before 
 ## Production Deployment
 
 ### File Locations
+
 - **Models:** `data/rba_lp_model.joblib`, `data/rba_ls_model.joblib`, etc.
 - **Metadata:** `data/rba_ensemble_meta.joblib`
 - **Metrics:** `data/rba_ensemble_eval.json`
 
 ### Database Storage
+
 - **Events:** `store.sqlite` / `events` table
 - **Features:** `store.sqlite` / `features` table
 - **Anomalies:** `store.sqlite` / `anomalies` table
 
 Each anomaly record stores:
+
 - `event_id`, `user_id`, `timestamp`
 - `risk` (final 0.0-3.0 score)
 - `reasons` (list of context reasons)
 - `contributions` (per-model scores: lp, ls, st_rf, st_et)
 
 ### API Integration
+
 When running with Okta Event Hooks:
+
 1. Hook receives event → API `/ingest/okta`
 2. Extract features
 3. Score with ensemble
@@ -263,18 +281,21 @@ When running with Okta Event Hooks:
 ## Customization
 
 ### Adjust Risk Thresholds
+
 Edit `ml/detector.py` → `risk_score()` method:
+
 ```python
 def risk_score(self, ensemble_risk, feature_row):
     # Adjust these multipliers:
     risk = ensemble_risk × 3.0  # Change 3.0 to scale differently
-    
+
     # Adjust these bonuses:
     if feature_row.get("off_hours"):
         risk += 0.15  # Change 0.15 to adjust off-hours weight
 ```
 
 Edit classification thresholds in `dashboard/app.py`:
+
 ```python
 def risk_level(risk):
     if risk >= 2.5:       # Change 2.5 to new Critical threshold
@@ -284,6 +305,7 @@ def risk_level(risk):
 ```
 
 ### Retrain Ensemble
+
 ```bash
 # In dashboard: Upload tab → "🧠 Train Model"
 # Or in code:
@@ -298,6 +320,7 @@ detector.save()
 ## Troubleshooting
 
 ### Models not loading?
+
 ```python
 from ml.rba_ensemble import RBAEnsembleDetector
 det = RBAEnsembleDetector()
@@ -305,11 +328,13 @@ print(det.is_trained)  # Should be True if models loaded
 ```
 
 ### Different risk scores after retraining?
+
 - Thresholds may shift with new training data
 - Weights change based on validation set AP
 - Normal and expected behavior
 
 ### Anomalies not showing in dashboard?
+
 1. Load data (Upload tab)
 2. Train models (button at top)
 3. Score events (button at top)

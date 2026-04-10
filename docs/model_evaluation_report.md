@@ -5,6 +5,7 @@
 Evaluated Labeled Propagation semi-supervised anomaly detection model on 4,999 authentication log records from Book1.xlsx dataset.
 
 **Model Status:** ✅ **Production Ready**
+
 - **Accuracy:** 73.60%
 - **Recall:** 82.14% (catches most anomalies)
 - **Precision:** 21.94% (manageable false positive rate)
@@ -14,21 +15,23 @@ Evaluated Labeled Propagation semi-supervised anomaly detection model on 4,999 a
 
 ## Dataset Overview
 
-| Metric | Value |
-|--------|-------|
-| Total Records | 4,999 |
-| Anomalies | 421 (8.42%) |
+| Metric        | Value           |
+| ------------- | --------------- |
+| Total Records | 4,999           |
+| Anomalies     | 421 (8.42%)     |
 | Normal Events | 45,480 (90.96%) |
-| Training Set | 39,999 (80%) |
-| Test Set | 10,000 (20%) |
-| Label Used | `Is Attack IP` |
+| Training Set  | 39,999 (80%)    |
+| Test Set      | 10,000 (20%)    |
+| Label Used    | `Is Attack IP`  |
 
 ---
 
 ## Model Performance
 
 ### Labeled Propagation
+
 **Hyperparameters:**
+
 - kernel: 'rbf'
 - gamma: 0.3
 - n_neighbors: 10
@@ -46,6 +49,7 @@ Evaluated Labeled Propagation semi-supervised anomaly detection model on 4,999 a
 | Sensitivity | 0.8214 (82.14%) |
 
 **Confusion Matrix (1,000 test subset):**
+
 ```
                   Predicted Normal  Predicted Anomaly
 Actual Normal            667              249
@@ -53,6 +57,7 @@ Actual Anomaly            15               69
 ```
 
 **Analysis:**
+
 - **Accuracy:** 73.60% of all predictions correct
 - **Recall:** 82.14% - Catches most real attacks (69 out of 84)
 - **Precision:** 21.94% - 1 in ~4.5 flagged events is a real anomaly
@@ -64,6 +69,7 @@ Actual Anomaly            15               69
 ## Key Performance Insights
 
 ### Strengths
+
 1. **High Recall (82.14%)** - Catches 82 out of 84 anomalies in validation set
    - Only misses 15 real attacks (false negatives)
    - Critical for security: missing attacks is costly
@@ -82,6 +88,7 @@ Actual Anomaly            15               69
    - More suitable for security domain than unsupervised approaches
 
 ### Trade-offs
+
 - **Accepts higher false positives** (249 normal events flagged as anomalies)
 - **Lower accuracy than fully conservative models** (73.60% vs potential 90%+)
 - **Rationale:** In security, catching attacks is more important than minimizing false alarms
@@ -95,12 +102,14 @@ Actual Anomaly            15               69
 ### ✅ Production Deployment
 
 **Why Labeled Propagation wins:**
+
 1. Detects 82% of anomalies (vs unsupervised methods ~12-20%)
 2. Strong ROC-AUC indicates robust performance
 3. Suitable for security use case (detection > precision tradeoff)
 4. Trained on large dataset (49,999 records) → generalizes well
 
 **Implementation:**
+
 1. Model saved at `data/labeled_propagation_model.joblib`
 2. Scaler saved at `data/labeled_propagation_scaler.joblib`
 3. Categorical encoders saved at `data/labeled_propagation_encoders.joblib`
@@ -120,9 +129,10 @@ Actual Anomaly            15               69
 ## Features Used
 
 Input features for anomaly detection:
+
 - `hour` - Hour of login attempt
 - `day_of_week` - Day of week
-- `day_of_month` - Day of month  
+- `day_of_month` - Day of month
 - `Round-Trip Time [ms]` - Network latency
 - `ASN` - Autonomous System Number
 - `Country` - Geographic location (one-hot encoded)
@@ -130,6 +140,7 @@ Input features for anomaly detection:
 - `Browser Name and Version` - Browser info (label encoded)
 
 Data preprocessing:
+
 - StandardScaler applied to numeric features
 - LabelEncoder for categorical features
 - Missing values filled with median

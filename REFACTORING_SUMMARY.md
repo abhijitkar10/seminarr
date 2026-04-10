@@ -2,8 +2,10 @@
 
 ## ✅ Completed Tasks
 
-### 1. **Code Refactoring** 
+### 1. **Code Refactoring**
+
 Simplified and cleaned up `ml/labeled_propagation_model.py`:
+
 - **Removed unused imports**: Optional, List, classification_report, precision_recall_curve, auc
 - **Simplified method signatures**: Removed redundant parameters
 - **Cleaner output**: Added `_print_metrics()` method for better readability
@@ -12,21 +14,27 @@ Simplified and cleaned up `ml/labeled_propagation_model.py`:
 - **Code quality**: Improved clarity and maintainability
 
 ### 2. **Single Dataset Focus**
+
 Now focusing exclusively on Book1.xlsx:
+
 - **4,999 rows** with established baseline
 - **Same structure**: 16 columns with "Is Attack IP" labels
-- **8.42% anomaly rate** 
-n- **Proven performance**: Well-validated training data
+- **8.42% anomaly rate**
+  n- **Proven performance**: Well-validated training data
 
 ### 3. **Training Script**
+
 Created `scripts/train_on_book2.py`:
+
 - Primary training script for Book1.xlsx
 - Proper error handling and validation
 - Clean progress output
 - Automatic model saving
 
 ### 4. **Removed Useless Artifacts**
+
 Deleted old model files (will be regenerated during training):
+
 - `data/labeled_propagation_model.joblib` ❌
 - `data/lp_encoders.joblib` ❌
 - `data/lp_evaluation.json` ❌
@@ -34,14 +42,15 @@ Deleted old model files (will be regenerated during training):
 
 ## 📊 Expected Improvements
 
-| Metric | Book1.xlsx (4,999 rows) | Status |
-|--------|---------------------|--------|
-| Data Size | 4,999 rows | Final |
-| Training Samples | ~2,999 | Stable |
-| Test Samples | ~2,000 | Stable |
-| Statistics Quality | Verified | Production-Ready |
+| Metric             | Book1.xlsx (4,999 rows) | Status           |
+| ------------------ | ----------------------- | ---------------- |
+| Data Size          | 4,999 rows              | Final            |
+| Training Samples   | ~2,999                  | Stable           |
+| Test Samples       | ~2,000                  | Stable           |
+| Statistics Quality | Verified                | Production-Ready |
 
 ### Expected Benefits:
+
 - ✓ Focused and reliable model with proven data
 - ✓ Consistent performance on established baseline
 - ✓ Simplified testing and deployment
@@ -50,12 +59,14 @@ Deleted old model files (will be regenerated during training):
 ## 🚀 Next Steps
 
 ### To Train on Book1.xlsx:
+
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 python3 scripts/train_on_book2.py
 ```
 
 ### Expected Training Output:
+
 - Loads 4,999 authentication logs from Book1.xlsx
 - Performs 60/40 stratified split
 - Trains semi-supervised Labeled Propagation model
@@ -63,20 +74,23 @@ python3 scripts/train_on_book2.py
 - Saves trained model and artifacts
 
 ### What Gets Created:
+
 - `data/labeled_propagation_model.joblib` - Trained model
 - `data/lp_scaler.joblib` - Feature scaler
-- `data/lp_encoders.joblib` - Categorical encoders  
+- `data/lp_encoders.joblib` - Categorical encoders
 - `data/lp_evaluation.json` - Evaluation metrics
 
 ## 🔧 Code Changes
 
 ### ml/labeled_propagation_model.py
+
 - **152 insertions / 136 deletions** (net: +16 lines)
 - Cleaner, more maintainable code
 - Better structured with dedicated helper methods
 - Improved error handling
 
 ### New Files
+
 - `scripts/train_on_book2.py` - Training script for Book2.xlsx
 - `Book2.xlsx` - New larger dataset (4.9 MB)
 

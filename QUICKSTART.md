@@ -14,6 +14,7 @@
 ## 🎯 Option 1: Quick Test (CSV Upload)
 
 ### Terminal 1 - Start API
+
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 source .venv/bin/activate
@@ -21,6 +22,7 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 ### Terminal 2 - Start Dashboard
+
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 source .venv/bin/activate
@@ -28,6 +30,7 @@ streamlit run dashboard/app.py --server.port 8501
 ```
 
 ### In Browser
+
 1. Open: http://localhost:8501
 2. Go to **Model Info** tab → Review both models
 3. Go to **Upload** tab
@@ -43,6 +46,7 @@ streamlit run dashboard/app.py --server.port 8501
 ## 🔒 Option 2: Full Setup with Okta Integration
 
 ### Terminal 1 - Start API
+
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 source .venv/bin/activate
@@ -50,16 +54,19 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 **Expected output:**
+
 ```
 Uvicorn running on http://127.0.0.1:8000
 ```
 
 ### Terminal 2 - Start ngrok Tunnel
+
 ```bash
 ngrok http 8000
 ```
 
 **Expected output:**
+
 ```
 Session Status                online
 Forwarding                    https://xyz-abc-def.ngrok-free.dev -> http://localhost:8000
@@ -68,6 +75,7 @@ Forwarding                    https://xyz-abc-def.ngrok-free.dev -> http://local
 📌 **COPY THIS HTTPS URL** - You'll use it in Okta
 
 ### Terminal 3 - Start Dashboard
+
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 source .venv/bin/activate
@@ -88,7 +96,6 @@ streamlit run dashboard/app.py --server.port 8501
    - **URL:** `https://<your-ngrok-url>/hooks/okta`
      - Replace `<your-ngrok-url>` with the URL from ngrok (e.g., `https://xyz-abc-def.ngrok-free.dev`)
      - Full URL should be: `https://xyz-abc-def.ngrok-free.dev/hooks/okta`
-   
 4. **Set Authentication**
    - **Authentication field name:** `authorization`
    - **Authentication secret:** (copy from `.env` file `OKTA_EVENT_HOOK_AUTH_SECRET`)
@@ -127,6 +134,7 @@ streamlit run dashboard/app.py --server.port 8501
 If model training finished, metrics will be in sidebar. To manually train:
 
 ### Option A: Via Dashboard
+
 1. Open: http://localhost:8501
 2. **Upload** tab
 3. Upload any CSV with authentication data
@@ -134,6 +142,7 @@ If model training finished, metrics will be in sidebar. To manually train:
 5. Click **🧠 Train Model**
 
 ### Option B: Via Script
+
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 source .venv/bin/activate
@@ -141,6 +150,7 @@ python3 scripts/train_on_book2.py
 ```
 
 **Expected output:**
+
 ```
 📊 Loading training data from Book2.xlsx...
 ✓ Loaded 49,999 rows with 16 columns
@@ -166,35 +176,41 @@ Model saved to data/labeled_propagation_model.joblib
 ## 🎨 Dashboard Overview
 
 ### 📈 Model Info Tab
+
 - Detailed model comparison
 - Performance metrics
 - Use case recommendations
 - Integration status
 
 ### 📤 Upload Tab
+
 - CSV upload
 - Sample download
 - Model selection (sidebar)
 - Train & Score buttons
 
 ### 📊 Activity Tab
+
 - Recent events
 - Success/failure metrics
 - Geographic map
 
 ### 🚨 Anomalies Tab
+
 - Detected anomalies
 - Risk levels (Low/Medium/High/Critical)
 - Feature importance
 - Okta event tracking
 
 ### 👥 Users Tab
+
 - User profiles
 - Typical login times
 - Locations
 - Resource usage
 
 ### 📉 Trends Tab
+
 - Event volume over time
 - Anomaly timeline
 - Resource popularity
@@ -222,6 +238,7 @@ Before declaring success:
 ## 🐛 Troubleshooting
 
 ### Dashboard won't load
+
 ```bash
 # Kill any existing streamlit process
 pkill streamlit
@@ -233,6 +250,7 @@ streamlit run dashboard/app.py --server.port 8501
 ```
 
 ### API shows 500 error
+
 ```bash
 # Check that venv is activated
 source .venv/bin/activate
@@ -243,12 +261,14 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 ### Okta events not flowing
+
 1. Verify ngrok URL is correct in Okta hook
 2. Check API logs for POST requests to `/hooks/okta`
 3. Verify auth secret in `.env` matches Okta hook
 4. Test with manual event: `curl http://localhost:8000/docs`
 
 ### Model training fails
+
 1. Ensure enough data: Need ≥50 feature rows
 2. Check data format - CSV must have required columns
 3. Try training with sample data first
@@ -280,20 +300,21 @@ curl -X POST http://localhost:8000/ingest \
 
 ## 🎓 Key Files
 
-| File | Purpose |
-|------|---------|
-| `app/main.py` | FastAPI backend |
-| `dashboard/app.py` | Streamlit frontend |
-| `ml/labeled_propagation_model.py` | Main ML model |
-| `adapters/okta.py` | Okta event normalization |
-| `data/db.py` | Database operations |
-| `docs/okta_event_hook_setup.md` | Detailed Okta setup |
+| File                              | Purpose                  |
+| --------------------------------- | ------------------------ |
+| `app/main.py`                     | FastAPI backend          |
+| `dashboard/app.py`                | Streamlit frontend       |
+| `ml/labeled_propagation_model.py` | Main ML model            |
+| `adapters/okta.py`                | Okta event normalization |
+| `data/db.py`                      | Database operations      |
+| `docs/okta_event_hook_setup.md`   | Detailed Okta setup      |
 
 ---
 
 ## 🎯 Success Criteria
 
 ✅ You'll know it's working when:
+
 1. Dashboard loads with model info tab
 2. Can select models from sidebar
 3. Can upload CSV and train
