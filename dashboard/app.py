@@ -512,19 +512,36 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
 # ========================== ACTIVITY TAB ==========================
 with tab_activity:
     st.subheader("Recent Authentication Events")
-    col_limit, col_filter = st.columns([1, 2])
-    with col_limit:
-        limit = st.slider("Limit", 10, 500, 100)
+    
+    # Get total counts
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM events")
+    total_events = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM anomalies")
+    total_anomalies = cursor.fetchone()[0]
+    normal_events = total_events - total_anomalies
+    cursor.execute("SELECT COUNT(*) FROM events WHERE success = 1")
+    successful = cursor.fetchone()[0]
+    failed = total_events - successful
+    conn.close()
+    
+    # Display statistics
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    col_m1.metric("🔢 Total Events", f"{total_events:,}")
+    col_m2.metric("🚨 Total Anomalies", f"{total_anomalies:,}")
+    col_m3.metric("✅ Normal Events", f"{normal_events:,}")
+    col_m4.metric("📊 Anomaly Rate", f"{(total_anomalies/total_events*100):.1f}%" if total_events > 0 else "0%")
+    
+    st.divider()
+    col_s1, col_s2 = st.columns(2)
+    col_s1.metric("✓ Successful Logins", f"{successful:,}")
+    col_s2.metric("✗ Failed Logins", f"{failed:,}")
 
-    rows = db.fetch_recent_events(limit=limit)
+    rows = db.fetch_recent_events(limit=500)
     df = pd.DataFrame([dict(r) for r in rows])
     if not df.empty:
-        col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("Total Events", len(df))
-        success_count = df["success"].sum()
-        col_m2.metric("Successful", int(success_count))
-        col_m3.metric("Failed", int(len(df) - success_count))
-
+        st.subheader(f"Sample of Recent Events (showing {len(df)} of {total_events})")
         st.dataframe(df, use_container_width=True)
         geo = df.dropna(subset=["latitude", "longitude"])[["latitude", "longitude"]].rename(
             columns={"latitude": "lat", "longitude": "lon"}
@@ -539,7 +556,7 @@ with tab_anomalies:
     
     st.info("""
 **ℹ️ Data Source:** Anomalies can come from:
-- 📤 CSV uploads in Upload tab
+- 📤 Excel uploads in Upload tab
 - 📚 Book1.xlsx (load via "Load Book1.xlsx" button)
 - 🪝 Okta Event Hooks (if configured with ngrok)
 - 🔌 Direct API calls to `/ingest` or `/ingest/okta`
@@ -547,8 +564,41 @@ with tab_anomalies:
 **To include Book1.xlsx anomalies:** Click the "Load Book1.xlsx" button in the Upload tab, then "Score All Events".
     """)
     
-    limit_an = st.slider("Limit (anomalies)", 10, 500, 100, key="anlimit")
-    rows = db.fetch_anomalies(limit=limit_an)
+    # Get all anomaly data
+    conn = db.connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM events")
+    total_events = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM anomalies")
+    total_anomalies = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 2.0")
+    critical = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 1.5 AND risk < 2.0")
+    high = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 1.0 AND risk < 1.5")
+    medium = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk < 1.0")
+    low = cursor.fetchone()[0]
+    conn.close()
+    
+    # Display comprehensive statistics
+    st.subheader("📊 Anomaly Statistics")
+    col_a1, col_a2, col_a3, col_a4 = st.columns(4)
+    col_a1.metric("🔴 Critical (risk ≥ 2.0)", f"{critical:,}")
+    col_a2.metric("🟠 High (1.5-2.0)", f"{high:,}")
+    col_a3.metric("🟡 Medium (1.0-1.5)", f"{medium:,}")
+    col_a4.metric("🟢 Low (< 1.0)", f"{low:,}")
+    
+    st.divider()
+    col_a5, col_a6, col_a7 = st.columns(3)
+    col_a5.metric("🚨 Total Anomalies", f"{total_anomalies:,}")
+    col_a6.metric("✅ Normal Events", f"{total_events - total_anomalies:,}")
+    col_a7.metric("📈 Anomaly Rate", f"{(total_anomalies/total_events*100):.1f}%" if total_events > 0 else "0%")
+    
+    st.divider()
+    st.subheader("📋 All Detected Anomalies")
+    
+    rows = db.fetch_anomalies(limit=500)
     anom_list = []
     for r in rows:
         anom_list.append({
@@ -561,19 +611,19 @@ with tab_anomalies:
         # Risk level color badges
         def risk_level(risk: float) -> str:
             if risk >= 2.0:
-                return "\U0001F534 Critical"
+                return "🔴 Critical"
             elif risk >= 1.5:
-                return "\U0001F7E0 High"
+                return "🟠 High"
             elif risk >= 1.0:
-                return "\U0001F7E1 Medium"
-            return "\U0001F7E2 Low"
+                return "🟡 Medium"
+            return "🟢 Low"
 
         df["risk_level"] = df["risk"].apply(risk_level)
         display_cols = [c for c in df.columns if c != "contributions"]
         st.dataframe(df[display_cols], use_container_width=True)
 
-        st.subheader("Feature Contributions")
-        idx = st.number_input("Row index", min_value=0, max_value=len(df) - 1, value=0)
+        st.subheader("🔍 Feature Contributions")
+        idx = st.number_input("Row index to inspect", min_value=0, max_value=len(df) - 1, value=0)
         contrib = df.iloc[idx]["contributions"]
         st.bar_chart(pd.Series(contrib).sort_values(ascending=False))
     else:
