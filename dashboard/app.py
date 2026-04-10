@@ -24,12 +24,6 @@ SAMPLE_CSV_PATH = ROOT / "data" / "sample_logs.csv"
 
 db.init_db()
 
-# Clear anomalies on dashboard startup (fresh state)
-conn = db.connect()
-conn.execute("DELETE FROM anomalies")
-conn.commit()
-conn.close()
-
 # ========================== SIDEBAR: Model Info ==========================
 st.sidebar.header("🤖 Active Models")
 
