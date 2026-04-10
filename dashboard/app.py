@@ -495,11 +495,15 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
                 st.warning("Train the ensemble model first")
             else:
                 with st.spinner("Scoring events with 4-Model Ensemble..."):
+                    # Clear old anomalies before scoring fresh data
                     conn = db.connect()
+                    conn.execute("DELETE FROM anomalies")
+                    conn.commit()
                     feat_rows = conn.execute("SELECT * FROM features ORDER BY timestamp DESC LIMIT 2000").fetchall()
                     conn.close()
                     from alerting.alerts import maybe_send_alert
                     scored = 0
+                    anomalies_detected = 0
                     for r in feat_rows:
                         fr = dict(r)
                         # Get ensemble risk score and per-model contributions
@@ -508,10 +512,15 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
                         risk, reasons = det.risk_score(ensemble_risk, fr)
                         # Store contributions as model-specific scores
                         contributions = per_model
-                        det.record_anomaly(fr, ensemble_risk, risk, reasons, contributions)
-                        maybe_send_alert(fr["event_id"], fr["user_id"], risk, reasons, contributions)
+                        
+                        # Only record as anomaly if risk >= 0.20 (Medium threshold)
+                        # This ensures only flagged events are in the anomalies table
+                        if risk >= 0.20:
+                            det.record_anomaly(fr, ensemble_risk, risk, reasons, contributions)
+                            anomalies_detected += 1
+                            maybe_send_alert(fr["event_id"], fr["user_id"], risk, reasons, contributions)
                         scored += 1
-                    st.success(f"✓ Scored **{scored}** events with ensemble model")
+                    st.success(f"✓ Scored **{scored}** events | 🚨 Flagged **{anomalies_detected}** anomalies")
 
 # ========================== ACTIVITY TAB ==========================
 with tab_activity:
