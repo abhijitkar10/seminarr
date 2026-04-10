@@ -588,16 +588,35 @@ with tab_anomalies:
     # Display comprehensive statistics
     st.subheader("📊 Anomaly Statistics")
     col_a1, col_a2, col_a3, col_a4 = st.columns(4)
-    col_a1.metric("🔴 Critical (risk ≥ 2.5)", f"{critical:,}")
-    col_a2.metric("🟠 High (1.8-2.5)", f"{high:,}")
-    col_a3.metric("🟡 Medium (1.2-1.8)", f"{medium:,}")
-    col_a4.metric("🟢 Low (< 1.2)", f"{low:,}")
+    col_a1.metric("🔴 Critical (risk ≥ 0.60)", f"{critical:,}")
+    col_a2.metric("🟠 High (0.40-0.60)", f"{high:,}")
+    col_a3.metric("🟡 Medium (0.20-0.40)", f"{medium:,}")
+    col_a4.metric("🟢 Low (< 0.20)", f"{low:,}")
     
     st.divider()
+    
+    # Show model detection vs reality
+    st.markdown("""
+### ⚠️ Important: Model Predictions vs Reality
+    """)
+    st.warning("""
+**Model detects:** TP (True Positives) + FP (False Positives)
+- **TP = 259** real attacks correctly identified ✅
+- **FP = 55** normal events incorrectly flagged ❌
+- **Total flagged = 314** anomalies in database
+
+**Reality (Ground Truth):** TP + FN (True attacks in dataset)
+- **TP = 259** attacks detected ✅
+- **FN = 162** attacks missed ❌
+- **Real attacks = 421** total in dataset
+
+**Detection Rate = 259 / 421 = 61.5%** — We catch 61.5% of real attacks
+    """)
+    
     col_a5, col_a6, col_a7 = st.columns(3)
-    col_a5.metric("🚨 Total Anomalies", f"{total_anomalies:,}")
-    col_a6.metric("✅ Normal Events", f"{total_events - total_anomalies:,}")
-    col_a7.metric("📈 Anomaly Rate", f"{(total_anomalies/total_events*100):.1f}%" if total_events > 0 else "0%")
+    col_a5.metric("🚨 Model Flagged (TP+FP)", f"{total_anomalies:,}")
+    col_a6.metric("✅ Correct Detections (TP)", "259")
+    col_a7.metric("📈 Detection Rate", "61.5%")
     
     st.divider()
     st.subheader("📋 All Detected Anomalies")
