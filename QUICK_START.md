@@ -45,32 +45,35 @@ Then open: **http://localhost:8501**
 
 ## 6 Requirements At a Glance
 
-| # | Requirement | Tab | Demo |
-|---|---|---|---|
-| **1** | 📥 **LOG INGESTION** | 📤 Data Ingestion | Upload XLSX → Auto column mapping → Score |
+| #     | Requirement              | Tab                  | Demo                                        |
+| ----- | ------------------------ | -------------------- | ------------------------------------------- |
+| **1** | 📥 **LOG INGESTION**     | 📤 Data Ingestion    | Upload XLSX → Auto column mapping → Score   |
 | **2** | 👤 **BASELINE PROFILES** | 👤 Baseline Profiles | Enter user_id → See typical hours/locations |
-| **3** | 🤖 **ANOMALY DETECTION** | 🧩 Ensemble Models | 4-model ML ensemble (88.84% ROC-AUC) |
-| **4** | 🎯 **RISK SCORES** | 🔍 Anomaly Explorer | 0-100 scale + 4 severity levels |
-| **5** | 📊 **VISUALIZATIONS** | All Tabs | Charts, tables, metrics, profiles |
-| **6** | 💡 **EXPLANATIONS** | 🔍 Anomaly Explorer | Click expand → See WHY flagged |
+| **3** | 🤖 **ANOMALY DETECTION** | 🧩 Ensemble Models   | 4-model ML ensemble (88.84% ROC-AUC)        |
+| **4** | 🎯 **RISK SCORES**       | 🔍 Anomaly Explorer  | 0-100 scale + 4 severity levels             |
+| **5** | 📊 **VISUALIZATIONS**    | All Tabs             | Charts, tables, metrics, profiles           |
+| **6** | 💡 **EXPLANATIONS**      | 🔍 Anomaly Explorer  | Click expand → See WHY flagged              |
 
 ---
 
 ## Try This First
 
 ### **Option A: See Pre-trained Results (2 min)**
+
 1. Go to 🧩 **Ensemble Models** tab
 2. See model performance metrics
 3. See how 4 models are weighted
 4. Click "🔍 Score Dataset" to score Book1 data
 
 ### **Option B: View Baseline (2 min)**
+
 1. Go to 👤 **Baseline Profiles** tab
 2. Enter user ID: `user_123` (or any from Book1)
 3. See their typical hours, locations, resources
 4. View failure rate
 
 ### **Option C: Upload Data & See Anomalies (5 min)**
+
 1. Go to 📤 **Data Ingestion** tab
 2. Upload CSV with: user_id, timestamp, resource, action, success
 3. Click "💾 Ingest into System"
@@ -85,12 +88,14 @@ Then open: **http://localhost:8501**
 ## Key Features in Each Tab
 
 ### 📊 **Overview Tab**
+
 - Quick reference to all 6 features
 - System status metrics
 - Links to relevant tabs
 - Quick start guide
 
 ### 🔍 **Anomaly Explorer Tab** ⭐ MOST IMPORTANT
+
 ```
 EACH ANOMALY SHOWS:
 ├─ Risk Level: 🟢 Low | 🟡 Medium | 🟠 High | 🔴 Critical
@@ -102,16 +107,18 @@ EACH ANOMALY SHOWS:
 ```
 
 ### 👤 **Baseline Profiles Tab**
+
 ```
 FOR ANY USER:
 ├─ Typical Login Hours: Bar chart
 ├─ Failure Rate: Percentage
-├─ Locations: List of typical places  
+├─ Locations: List of typical places
 ├─ Resources: Accessed services
 └─ Deviations: What would be unusual
 ```
 
 ### 🧩 **Ensemble Models Tab**
+
 ```
 SHOWS:
 ├─ Ensemble Metrics: ROC-AUC, F1, Recall, Accuracy
@@ -121,6 +128,7 @@ SHOWS:
 ```
 
 ### 📤 **Data Ingestion Tab**
+
 ```
 PROCESS:
 1. See required columns (user_id, timestamp, etc.)
@@ -132,6 +140,7 @@ PROCESS:
 ```
 
 ### 📈 **Advanced Details Tab**
+
 ```
 DATABASE STATS:
 ├─ Total events ingested
@@ -155,7 +164,7 @@ CONFIGURATION:
    Action: Monitor, log for audit
 
 🟡 MEDIUM RISK (20-50)
-   Status: Notable deviation 
+   Status: Notable deviation
    Action: Consider MFA challenge
 
 🟠 HIGH RISK (50-75)
@@ -197,7 +206,7 @@ SIMILAR EVENTS:
 
 RECOMMENDATIONS:
 ⚠️ Block user immediately
-⚠️ Force password reset  
+⚠️ Force password reset
 ⚠️ Alert security team
 ⚠️ Review recent access logs
 ```
@@ -263,12 +272,14 @@ IMPLEMENTATION_COMPLETE.md
 ## Common Tasks
 
 ### **Task: View Pre-Trained Model Performance**
+
 1. Start dashboard
 2. Go to 🧩 **Ensemble Models** tab
 3. See ROC-AUC: 0.8884 (88.84% good!)
 4. See per-model comparison (4 models)
 
 ### **Task: See Why Event Was Flagged**
+
 1. Go to 🔍 **Anomaly Explorer** tab
 2. Find anomaly in list (sorted by risk)
 3. Click expand arrow
@@ -276,6 +287,7 @@ IMPLEMENTATION_COMPLETE.md
 5. See "Contributing Factors" ranked
 
 ### **Task: Understand User's Normal Behavior**
+
 1. Go to 👤 **Baseline Profiles** tab
 2. Type in user_id
 3. See typical hours (chart)
@@ -284,6 +296,7 @@ IMPLEMENTATION_COMPLETE.md
 6. Review what would be "deviation"
 
 ### **Task: Score New Data**
+
 1. Go to 🧩 **Ensemble Models** tab
 2. Click "Score Dataset" section
 3. Upload CSV/XLSX file
@@ -291,6 +304,7 @@ IMPLEMENTATION_COMPLETE.md
 5. See results table
 
 ### **Task: Ingest Company Logs**
+
 1. Go to 📤 **Data Ingestion** tab
 2. Prepare CSV with: user_id, timestamp, resource, action, success
 3. Upload file
@@ -304,6 +318,7 @@ IMPLEMENTATION_COMPLETE.md
 ## Test Data
 
 Pre-trained on Book1.xlsx:
+
 - 4,999 authentication logs
 - 80% normal, 20% anomalies
 - Multiple users, locations, resources
@@ -348,6 +363,7 @@ Model Performance (Book1 Test Set):
 **Start the dashboard and explore!**
 
 All 6 core requirements are implemented:
+
 1. ✅ Log Ingestion - 📤 Data Ingestion tab
 2. ✅ Baseline Profiles - 👤 Baseline Profiles tab
 3. ✅ Anomaly Detection - 🧩 Ensemble Models tab
@@ -356,4 +372,3 @@ All 6 core requirements are implemented:
 6. ✅ Explanations - 🔍 Anomaly Explorer tab (expand anomalies)
 
 **Start here:** 🔍 **Anomaly Explorer** tab → Expand anomalies to see explanations!
-

@@ -9,11 +9,11 @@ graph LR
     A[CSV Upload] --> B[CSV Parser]
     C[Okta REST API] --> D[Okta Adapter]
     E[Stream Simulator] --> F[Event Parser]
-    
+
     B --> G[Event Validation]
     D --> G
     F --> G
-    
+
     G --> H[(SQLite DB)]
     H --> I[Feature Engineering]
     I --> J[(Features DB)]
@@ -29,6 +29,7 @@ graph LR
 ### Supported Input Sources
 
 #### A. CSV Upload (📤 Data Ingestion Tab)
+
 ```
 Supported Format:
 - CSV or XLSX files
@@ -49,14 +50,14 @@ Pipeline:
 def parse_csv(file_path: str) -> List[AuthEvent]:
     """
     Parse CSV file and return list of AuthEvent objects
-    
+
     Columns (required):
     - user_id: str (username)
     - timestamp: str (ISO format: 2024-01-15T10:30:00Z)
     - resource: str (system being accessed)
     - action: str (login, access, modify, delete)
     - success: bool (true/false or 0/1)
-    
+
     Columns (optional):
     - device_type: str (desktop, mobile, laptop)
     - location: str (city/country)
@@ -66,6 +67,7 @@ def parse_csv(file_path: str) -> List[AuthEvent]:
 ```
 
 #### B. Okta Event Hooks
+
 ```
 Setup (See docs/okta_event_hook_setup.md):
 - Event types: user.authentication.authenticate, user.authentication.authenticate_fail, etc.
@@ -86,7 +88,7 @@ Pipeline:
 def parse_okta_event(event_json: dict) -> AuthEvent:
     """
     Normalize Okta System Log event to AuthEvent format
-    
+
     Okta sends:
     {
         "eventType": "user.authentication.authenticate",
@@ -96,7 +98,7 @@ def parse_okta_event(event_json: dict) -> AuthEvent:
         "published": "2024-01-15T10:30:00.000Z",
         ...
     }
-    
+
     Maps to AuthEvent:
     - user_id: actor.displayName
     - resource: 'okta'
@@ -109,6 +111,7 @@ def parse_okta_event(event_json: dict) -> AuthEvent:
 ```
 
 #### C. Real-Time Stream (Optional)
+
 ```python
 python scripts/stream_simulator.py --rps 2 --anomaly-prob 0.1
 
@@ -135,6 +138,7 @@ class AuthEvent:
 ```
 
 **Validation Rules:**
+
 - user_id: non-empty string, max 256 chars
 - resource: non-empty string, max 256 chars
 - timestamp: past or present (not future)
@@ -268,7 +272,7 @@ FEATURES FOR ANOMALY DETECTION:
 def extract_features(event: AuthEvent, db: Database) -> dict:
     """
     Extract 12 features from raw event
-    
+
     Process:
     1. Query user history from database
     2. Query resource statistics
@@ -276,34 +280,34 @@ def extract_features(event: AuthEvent, db: Database) -> dict:
     4. Compute geographic features
     5. Return feature vector
     """
-    
+
     features = {}
-    
+
     # TEMPORAL (3 features)
     features['temporal_hour'] = event.timestamp.hour              # 0-23
     features['temporal_weekday'] = event.timestamp.weekday()      # 0-6
     features['temporal_is_off_hours'] = is_off_hours(event.timestamp)  # bool
-    
+
     # GEO (2 features)
     user_geo_history = db.get_user_location_history(event.user_id)
     features['geo_failed_count'] = db.count_failed_from_location(event.location)
     features['geo_is_new_location'] = event.location not in user_geo_history
-    
+
     # USER (4 features)
     user_stats = db.get_user_stats(event.user_id)
     features['user_typical_hours'] = user_stats['hour_distribution'].get(event.timestamp.hour, 0)
     features['user_failure_rate'] = user_stats['failure_rate']
     features['user_same_resource_count'] = user_stats['resource_counts'].get(event.resource, 0)
     features['user_days_since_last_login'] = days_since(user_stats['last_login'])
-    
+
     # RESOURCE (2 features)
     resource_stats = db.get_resource_stats(event.resource)
     features['resource_failure_rate'] = resource_stats['failure_rate']
     features['resource_popularity'] = resource_stats['user_count']
-    
+
     # DEVICE (1 feature)
     features['device_type_encoded'] = encode_device_type(event.device_type)
-    
+
     return features  # dict of 12 features
 ```
 
@@ -348,7 +352,7 @@ For each user, baseline profiles are built from historical data:
 def build_user_baseline(user_id: str, db: Database) -> UserBaseline:
     """
     Build baseline profile for a user
-    
+
     Returns typical:
     - Hours they log in (hourly distribution)
     - Locations they access from
@@ -356,9 +360,9 @@ def build_user_baseline(user_id: str, db: Database) -> UserBaseline:
     - Failure rate (normal %)
     - Days typically between logins
     """
-    
+
     user_history = db.get_events_for_user(user_id, days=90)  # Last 90 days
-    
+
     return UserBaseline(
         typical_hours=compute_hour_distribution(user_history),
         typical_locations=compute_location_distribution(user_history),
@@ -573,12 +577,12 @@ SELECT severity, COUNT(*) FROM anomalies GROUP BY severity
 
 ### Common Issues
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| "Missing required column" | CSV format invalid | Check required columns: user_id, timestamp, resource, action, success |
-| "Timestamp invalid" | Wrong date format | Use ISO format: 2024-01-15T10:30:00Z |
-| "Location not found" | GeoIP lookup failed | Ensure ip_address column provided |
-| "User not in baseline" | First login | New users get generic baseline, refined after 10 events |
+| Issue                     | Cause               | Solution                                                              |
+| ------------------------- | ------------------- | --------------------------------------------------------------------- |
+| "Missing required column" | CSV format invalid  | Check required columns: user_id, timestamp, resource, action, success |
+| "Timestamp invalid"       | Wrong date format   | Use ISO format: 2024-01-15T10:30:00Z                                  |
+| "Location not found"      | GeoIP lookup failed | Ensure ip_address column provided                                     |
+| "User not in baseline"    | First login         | New users get generic baseline, refined after 10 events               |
 
 ---
 

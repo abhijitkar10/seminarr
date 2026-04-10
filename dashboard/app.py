@@ -425,7 +425,7 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
             """
         )
     with col_sample:
-        st.info("💡 Use Book1.xlsx or Book2.xlsx as templates")
+        st.info("💡 Use Book1.xlsx as template")
 
     uploaded = st.file_uploader("Choose an Excel file (.xlsx)", type=["xlsx", "xls"])
 
@@ -457,7 +457,7 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
     st.divider()
     st.subheader("Load Historical Data")
     
-    col_book1, col_book2 = st.columns(2)
+    col_book1 = st.columns(1)[0]
     with col_book1:
         if st.button("📚 Load Book1.xlsx (4,999 events)", use_container_width=True):
             with st.spinner("Loading Book1.xlsx..."):

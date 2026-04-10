@@ -3,6 +3,7 @@
 ## Dashboard Overview
 
 The Streamlit dashboard provides a comprehensive web interface for:
+
 - ✅ Viewing real-time authentication anomalies
 - ✅ Understanding user baseline behaviors
 - ✅ Evaluating ML model performance
@@ -141,7 +142,7 @@ The Streamlit dashboard provides a comprehensive web interface for:
 │ ‣ RISK: 🔴 95/100  |  2024-01-15 03:15  |  user_123   │
 │   EVENT DETAILS:                                        │
 │   Resource: admin_panel | Action: login | Location: Moscow
-│   
+│
 │   ▼ EXPAND ANOMALY DETAILS  ▼  ◄─── CLICK HERE       │
 │   ┌──────────────────────────────────────────────────┐ │
 │   │                                                  │ │
@@ -206,18 +207,19 @@ The Streamlit dashboard provides a comprehensive web interface for:
    - By user ID (optional)
 
 4. **SQL Queries to Database**
+
    ```python
    # Fetch anomalies
    SELECT * FROM anomalies
    ORDER BY risk_score DESC
    LIMIT 50
-   
+
    # Parse reasons from JSON
    reasons = json.loads(anomaly['reasons'])  # List of reasons
-   
+
    # Parse contributing factors
    factors = json.loads(anomaly['contributing_factors'])  # Dict
-   
+
    # Get similar historical events
    SELECT * FROM events
    WHERE user_id = 'user_123'
@@ -547,19 +549,19 @@ LIMIT 100
 def ingest_data(file):
     # 1. Parse CSV
     events = csv_parser.parse(file)
-    
+
     # 2. Validate
     for event in events:
         validate(event)
-    
+
     # 3. Store events
     db.insert_events(events)
-    
+
     # 4. Extract features
     for event in events:
         features = feature_engine.extract(event, db)
         db.insert_features(event_id, features)
-    
+
     # 5. Score with ensemble
     for features in db.get_all_features():
         score = ensemble.score(features)
@@ -567,7 +569,7 @@ def ingest_data(file):
         severity = categorize_risk(risk_score)
         if risk_score > 30:  # Threshold
             db.insert_anomaly(score, severity)
-    
+
     return {
         'events_processed': len(events),
         'anomalies_detected': db.count_anomalies(),
@@ -725,6 +727,7 @@ def ingest_data(file):
 ## 📊 Sidebar Information
 
 The sidebar displays:
+
 - **System Status:** Events, anomalies, model status
 - **Model Performance:** ROC-AUC, Recall, Ensemble composition
 - ** Quick Stats:** Unique users, resources, locations
@@ -744,6 +747,7 @@ Updated dynamically as new data is ingested.
 ## 💾 Export & Integration
 
 Currently view-only in dashboard. For integration:
+
 - API available at `http://localhost:8000/docs`
 - Database accessible at `data/store.sqlite`
 - Models available for direct import in Python

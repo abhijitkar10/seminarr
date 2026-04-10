@@ -63,27 +63,27 @@ sequenceDiagram
 
 ## Components
 
-| Component | Tech | Role |
-|-----------|------|------|
-| API | FastAPI + Uvicorn | REST endpoints for ingestion, scoring, queries |
-| Dashboard | Streamlit (6 tabs) | Web UI — 4-model ensemble, baselines, explanations |
-| ML Ensemble | scikit-learn semi-supervised | 4 models voting: LP, LS, ST-RF, ST-ET |
-| Feature Engine | Python + SQLite queries | 12 features: temporal, geo, behavioral |
-| Storage | SQLite | Events, features, anomalies (with reasons), users |
-| Risk Scoring | Python custom | Weighted ensemble + 0-100 scale + severity levels |
-| Adapters | CSV parser, Okta normalizer | Multi-format log ingestion |
+| Component      | Tech                         | Role                                               |
+| -------------- | ---------------------------- | -------------------------------------------------- |
+| API            | FastAPI + Uvicorn            | REST endpoints for ingestion, scoring, queries     |
+| Dashboard      | Streamlit (6 tabs)           | Web UI — 4-model ensemble, baselines, explanations |
+| ML Ensemble    | scikit-learn semi-supervised | 4 models voting: LP, LS, ST-RF, ST-ET              |
+| Feature Engine | Python + SQLite queries      | 12 features: temporal, geo, behavioral             |
+| Storage        | SQLite                       | Events, features, anomalies (with reasons), users  |
+| Risk Scoring   | Python custom                | Weighted ensemble + 0-100 scale + severity levels  |
+| Adapters       | CSV parser, Okta normalizer  | Multi-format log ingestion                         |
 
 ## 🤖 ML Models - 4-Model Ensemble
 
 ### Performance
 
-| Metric | Score |
-|--------|-------|
-| **ROC-AUC** | **0.8884** ⭐ Excellent |
-| **F1-Score** | 0.4091 |
-| **Recall** | 0.4286 (catches ~43% anomalies) |
-| **Accuracy** | 89.60% |
-| **Test Set** | 1,000 events from Book1 |
+| Metric       | Score                           |
+| ------------ | ------------------------------- |
+| **ROC-AUC**  | **0.8884** ⭐ Excellent         |
+| **F1-Score** | 0.4091                          |
+| **Recall**   | 0.4286 (catches ~43% anomalies) |
+| **Accuracy** | 89.60%                          |
+| **Test Set** | 1,000 events from Book1         |
 
 ### Models
 
@@ -104,6 +104,7 @@ Contributing Factors = mean(feature_importance_across_models)
 ### Training Dataset
 
 **Book1.xlsx Dataset:**
+
 - 4,999 authentication events
 - ~20% anomalies (account takeover, privilege abuse, off-hours access, etc.)
 - Features: user_id, resource, timestamp, action, success, device_type, location, etc.

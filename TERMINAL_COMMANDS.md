@@ -184,36 +184,20 @@ streamlit run dashboard/app.py --server.port 8501
 
 ## 🧠 Train Models
 
-### Mac - Train Labeled Propagation Model
+### Mac - Train Models on Book1.xlsx
 
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 source .venv/bin/activate
-python scripts/train_on_book2.py
+python scripts/train_all_book2.py
 ```
 
-### Windows - Train Labeled Propagation Model
+### Windows - Train Models on Book1.xlsx
 
 ```cmd
 cd C:\path\to\seminarr
 .venv\Scripts\activate
-python scripts/train_on_book2.py
-```
-
-### Mac - Train RBA Ensemble Model
-
-```bash
-cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
-source .venv/bin/activate
-python scripts/train_rba_ensemble.py
-```
-
-### Windows - Train RBA Ensemble Model
-
-```cmd
-cd C:\path\to\seminarr
-.venv\Scripts\activate
-python scripts/train_rba_ensemble.py
+python scripts/train_all_book2.py
 ```
 
 ---

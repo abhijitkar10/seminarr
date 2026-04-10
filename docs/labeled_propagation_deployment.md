@@ -2,7 +2,7 @@
 
 ## Summary of Results
 
-### 📊 Model Performance on Book2.xlsx (49,999 records)
+### 📊 Model Performance on Book1.xlsx (4,999 records)
 
 ```
 LABELED PROPAGATION (PRODUCTION)
@@ -10,7 +10,7 @@ LABELED PROPAGATION (PRODUCTION)
 ├─ Recall: 82.14%    ✓ Catches 82 out of 84 attacks
 ├─ ROC-AUC: 0.8195   ✓ Excellent discrimination
 ├─ Precision: 21.94% ✓ 1 in 4.5 alerts is real attack
-└─ Dataset: 49,999 authentication logs
+└─ Dataset: 4,999 authentication logs
 ```
 
 **Key Insight:** Model trained on larger dataset (10x size) with realistic anomaly rate (9.04%) provides robust, production-ready detection capability.

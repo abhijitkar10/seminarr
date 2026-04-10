@@ -50,7 +50,7 @@ def main():
     print("\n" + "="*60)
     print("TRAINING SUMMARY")
     print("="*60)
-    print(f"Dataset:        Book2.xlsx ({len(df):,} rows)")
+    print(f"Dataset:        Book1.xlsx ({len(df):,} rows)")
     print(f"Test Set Size:  {metrics['tp'] + metrics['fp'] + metrics['fn'] + metrics['tn']} samples")
     print(f"Recall:         {metrics['recall']:.2%}")
     print(f"F1 Score:       {metrics['f1']:.4f}")

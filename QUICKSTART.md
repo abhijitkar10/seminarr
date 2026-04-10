@@ -3,8 +3,7 @@
 ## 📋 What's Ready
 
 ✅ Refactored codebase (clean, removed useless code)
-✅ Book2.xlsx dataset (49,999 rows for training)
-✅ Training script ready (scripts/train_on_book2.py)
+✅ Book1.xlsx dataset (4,999 rows)
 ✅ Updated frontend with model selection
 ✅ API fully functional
 ✅ Okta integration working

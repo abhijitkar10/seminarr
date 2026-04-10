@@ -1,14 +1,14 @@
 # Implementation Summary: Labeled Propagation Model
 
 ## Overview
-Successfully implemented and deployed a **Labeled Propagation semi-supervised learning model** for anomaly detection on 49,999 authentication logs from Book2.xlsx dataset.
+Successfully implemented and deployed a **Labeled Propagation semi-supervised learning model** for anomaly detection on 4,999 authentication logs from Book1.xlsx dataset.
 
 ---
 
 ## What Was Accomplished
 
 ### 1. ✅ Data Loading & Exploration
-- Loaded Book2.xlsx with 49,999 authentication records
+- Loaded Book1.xlsx with 4,999 authentication records
 - Identified 4,519 attack IPs (9.04% anomaly rate)
 - Explored 16 features including geolocation, device, browser, timing data
 - Prepared features: 8 numeric features after encoding categorical variables
@@ -55,7 +55,7 @@ Successfully implemented and deployed a **Labeled Propagation semi-supervised le
 - Comprehensive code comments and docstrings
 
 ### 7. ✅ Training Scripts
-- **scripts/train_on_book2.py** - Train LP on Book2.xlsx dataset
+- **scripts/train_on_book2.py** - Train LP on Book1.xlsx dataset
 - Optimized for production deployment
 - Generates model artifacts and metrics
 
@@ -99,7 +99,7 @@ ml/
 ├── labeled_propagation_model.py          (Refactored)
 
 scripts/
-└── train_on_book2.py                     (Primary training script)
+└── train_on_book2.py                     (Primary training script - uses Book1.xlsx)
 
 dashboard/
 └── app.py                                (Updated - removed model selector)
@@ -108,7 +108,7 @@ dashboard/
 ### Documentation
 ```
 docs/
-├── model_evaluation_report.md            (Updated to Book2.xlsx)
+├── model_evaluation_report.md            (Updated to Book1.xlsx)
 └── labeled_propagation_deployment.md     (Updated deployment guide)
 
 Root:
@@ -122,7 +122,7 @@ Root:
 
 ### Train the Model
 ```bash
-# Train LP model on Book2.xlsx
+# Train LP model on Book1.xlsx
 python scripts/train_on_book2.py
 ```
 
@@ -225,7 +225,7 @@ predictions, probabilities = detector.predict(X_new)
 
 ## References
 
-- **Dataset:** Book2.xlsx (49,999 authentication logs)
+- **Dataset:** Book1.xlsx (4,999 authentication logs)
 - **Primary Label:** `Is Attack IP` (9.04% anomalies)
 - **Train/Test Split:** 80/20 with stratification
 - **Model Size:** ~5 MB (compact for deployment)

@@ -8,12 +8,14 @@ Identifies compromised credentials, insider threats, privilege abuse, and accoun
 **Ensemble Performance:** ⭐ **ROC-AUC: 0.8884** (88.84% discrimination)
 
 Combines 4 semi-supervised algorithms:
+
 1. **Label Propagation** — Semi-supervised, leverages unlabeled data
 2. **Label Spreading** — Similar to LP, smooth label transitions
 3. **Self-Training Random Forest** — Iterative pseudo-labeling, strong baseline
 4. **Self-Training Extra Trees** — Balanced, reduces overfitting
 
 **Performance Metrics** (Book1 Test Set):
+
 - **ROC-AUC:** 0.8884 ⭐ (excellent discrimination)
 - **F1-Score:** 0.4091
 - **Recall:** 0.4286 (catches ~43% of anomalies)
@@ -24,14 +26,14 @@ Combines 4 semi-supervised algorithms:
 
 ## 📋 6 Core Requirements - All Implemented
 
-| # | Requirement | How It Works |
-|---|---|---|
-| **1** | 📥 **Ingest & Process Logs** | 📤 Data Ingestion tab — Upload CSV/XLSX, auto-parse, validate, extract features |
+| #     | Requirement                       | How It Works                                                                        |
+| ----- | --------------------------------- | ----------------------------------------------------------------------------------- |
+| **1** | 📥 **Ingest & Process Logs**      | 📤 Data Ingestion tab — Upload CSV/XLSX, auto-parse, validate, extract features     |
 | **2** | 👤 **Baseline Behavior Profiles** | 👤 Baseline Profiles tab — Enter user_id to see typical hours, locations, resources |
-| **3** | 🤖 **Anomaly Detection (ML)** | 🧩 Ensemble Models tab — 4-model ensemble with 88.84% ROC-AUC |
-| **4** | 🎯 **Risk Scores & Alerts** | 🔍 Anomaly Explorer tab — 0-100 scale, 4 severity levels (🟢🟡🟠🔴) |
-| **5** | 📊 **Interactive Visualizations** | All tabs — Charts, tables, metrics, expandable details |
-| **6** | 💡 **Explanations for Anomalies** | 🔍 Anomaly Explorer tab — Click expand to see WHY flagged + recommendations |
+| **3** | 🤖 **Anomaly Detection (ML)**     | 🧩 Ensemble Models tab — 4-model ensemble with 88.84% ROC-AUC                       |
+| **4** | 🎯 **Risk Scores & Alerts**       | 🔍 Anomaly Explorer tab — 0-100 scale, 4 severity levels (🟢🟡🟠🔴)                 |
+| **5** | 📊 **Interactive Visualizations** | All tabs — Charts, tables, metrics, expandable details                              |
+| **6** | 💡 **Explanations for Anomalies** | 🔍 Anomaly Explorer tab — Click expand to see WHY flagged + recommendations         |
 
 ## ⚡ Quick Start (2 minutes)
 
@@ -54,11 +56,13 @@ Then open: **http://localhost:8501**
 ## 🎯 Dashboard Tabs (All 6 Requirements)
 
 ### 📊 Overview Tab
+
 - System status & quick reference
 - Map of all 6 requirements
 - Direct "Go to" links to relevant tabs
 
 ### 🔍 Anomaly Explorer Tab ⭐ **MOST IMPORTANT**
+
 - Displays top 50 anomalies sorted by risk
 - **Click expand** to see explanations:
   - ❓ Why was this flagged?
@@ -68,6 +72,7 @@ Then open: **http://localhost:8501**
   - 🎯 Risk gauge (🟢🟡🟠🔴)
 
 ### 👤 Baseline Profiles Tab
+
 - Enter any user_id
 - See typical hours (chart)
 - See typical locations & resources
@@ -75,12 +80,14 @@ Then open: **http://localhost:8501**
 - Highlights deviations
 
 ### 🧩 Ensemble Models Tab
+
 - Model performance metrics (ROC-AUC, F1, Recall, Accuracy)
 - Per-model comparison (all 4 models)
 - Weight allocation visualization
 - Score new datasets
 
 ### 📤 Data Ingestion Tab
+
 - Upload CSV/XLSX with your logs
 - Automatic parsing & validation
 - Feature extraction preview
@@ -88,6 +95,7 @@ Then open: **http://localhost:8501**
 - Real-time scoring with ensemble
 
 ### 📈 Advanced Details Tab
+
 - Database statistics
 - Feature engineering reference
 - System configuration
@@ -121,6 +129,7 @@ docker-compose up --build
 ## 🔑 Environment Setup
 
 ### For Dashboard Only (Recommended)
+
 No environment variables needed. Pre-trained models included.
 
 ### For API + Okta Integration
@@ -131,6 +140,7 @@ cp .env.example .env
 ```
 
 Then set:
+
 ```env
 OKTA_EVENT_HOOK_AUTH_SECRET=your-secret
 OKTA_EVENT_HOOK_AUTH_HEADER=authorization

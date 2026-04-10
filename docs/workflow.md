@@ -21,6 +21,7 @@ graph TD
 ## Step-by-Step Usage
 
 ### 1. Start Dashboard
+
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 source .venv/bin/activate
@@ -30,11 +31,13 @@ streamlit run dashboard/app.py --server.port 8501
 Open: http://localhost:8501
 
 ### 2. Explore Pre-Trained Results (📊 Overview Tab)
+
 - See 6 core requirements
 - View model performance
 - Navigate to specific tabs
 
 ### 3. View Anomalies & Explanations (🔍 Anomaly Explorer Tab) ⭐ MOST IMPORTANT
+
 - Displays top 50 anomalies sorted by risk
 - **Click expand arrow** on any anomaly to see:
   - **Event details** - ID, user, timestamp, scores
@@ -45,6 +48,7 @@ Open: http://localhost:8501
   - **💡 Recommendations** - What to do (block? investigate?)
 
 ### 4. Check User Baseline (👤 Baseline Profiles Tab)
+
 - Enter any `user_id` from your data
 - See their typical behavior:
   - Login hours (chart)
@@ -54,6 +58,7 @@ Open: http://localhost:8501
 - Understand what would be "unusual" for this user
 
 ### 5. Understand ML Performance (🧩 Ensemble Models Tab)
+
 - See metrics: ROC-AUC (0.8884), F1, Recall, Accuracy
 - View all 4 models:
   - Label Propagation
@@ -63,6 +68,7 @@ Open: http://localhost:8501
 - See weight allocation
 
 ### 6. Upload New Data (📤 Data Ingestion Tab)
+
 ```
 PROCESS:
 1. See required columns
@@ -80,6 +86,7 @@ PROCESS:
 ```
 
 ### 7. Review System Details (📈 Advanced Details Tab)
+
 - Database statistics
 - Features reference
 - Configuration info
@@ -92,6 +99,7 @@ python scripts/stream_simulator.py --rps 2 --anomaly-prob 0.1
 ```
 
 Events flow through system automatically:
+
 - Ingested
 - Features extracted
 - Scored with ensemble
@@ -117,12 +125,14 @@ curl http://localhost:8000/baseline/user_123
 ## Key Workflows by Goal
 
 ### Goal: **See Pre-Trained Model Results**
+
 1. Start dashboard
 2. Go to 🧩 **Ensemble Models** tab
 3. See ROC-AUC: 0.8884
 4. Click "Score Dataset" to score Book1 data
 
 ### Goal: **Understand Why Event Was Flagged**
+
 1. Go to 🔍 **Anomaly Explorer** tab
 2. Find anomaly in list
 3. Click expand arrow
@@ -130,6 +140,7 @@ curl http://localhost:8000/baseline/user_123
 5. See "Contributing Factors"
 
 ### Goal: **Learn User's Normal Behavior**
+
 1. Go to 👤 **Baseline Profiles** tab
 2. Enter user_id (e.g., user_123)
 3. See typical hours chart
@@ -137,6 +148,7 @@ curl http://localhost:8000/baseline/user_123
 5. See accessed resources
 
 ### Goal: **Upload and Score Company Logs**
+
 1. Prepare CSV with: user_id, timestamp, resource, action, success
 2. Go to 📤 **Data Ingestion** tab
 3. Upload file

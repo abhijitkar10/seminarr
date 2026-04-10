@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Train ALL model components on Book2.xlsx in a single run:
+Train ALL model components on Book1.xlsx in a single run:
   1. 4-Model Ensemble (Label Propagation, Label Spreading, ST-RF, ST-ET)
   2. Isolation Forest (standalone)
   3. One-Class SVM (standalone)
@@ -12,7 +12,7 @@ Usage:
     python scripts/train_all_book2.py
 
 This script:
-  - Loads Book2.xlsx from the workspace
+  - Loads Book1.xlsx from the workspace
   - Trains all 3 model components with detailed progress output
   - Saves trained models to data/ directory
   - Generates detailed evaluation metrics in JSON format
@@ -37,23 +37,23 @@ from ml.rba_ensemble import RBAEnsembleDetector
 
 def main() -> None:
     """Main training orchestration."""
-    book2_path = ROOT / "Book2.xlsx"
+    book1_path = ROOT / "Book1.xlsx"
 
-    if not book2_path.exists():
-        print(f"✗ Book2.xlsx not found at {book2_path}")
+    if not book1_path.exists():
+        print(f"✗ Book1.xlsx not found at {book1_path}")
         sys.exit(1)
 
     print("\n" + "=" * 70)
-    print("  TRAINING ALL MODELS ON BOOK2.XLSX")
+    print("  TRAINING ALL MODELS ON BOOK1.XLSX")
     print("=" * 70)
     print(f"  Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Data file: {book2_path}")
+    print(f"  Data file: {book1_path}")
     print("=" * 70 + "\n")
 
     # ── Load data ─────────────────────────────────────────────────────────────
-    print("📂 Loading Book2.xlsx...")
+    print("📂 Loading Book1.xlsx...")
     start = time.time()
-    df = pd.read_excel(book2_path)
+    df = pd.read_excel(book1_path)
     elapsed = time.time() - start
 
     print(f"   ✓ Loaded {len(df):,} rows × {df.shape[1]} columns in {elapsed:.2f}s")

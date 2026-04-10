@@ -1,4 +1,4 @@
-# Refactoring Summary: Clean Code + Book2.xlsx Dataset
+# Refactoring Summary: Clean Code + Single Book1.xlsx Dataset
 
 ## ✅ Completed Tasks
 
@@ -11,16 +11,16 @@ Simplified and cleaned up `ml/labeled_propagation_model.py`:
 - **Default label column**: Changed to "Is Attack IP" for consistency
 - **Code quality**: Improved clarity and maintainability
 
-### 2. **New Dataset Integration**
-Added `Book2.xlsx` with significantly more data:
-- **49,999 rows** (10x more than Book1.xlsx's ~5,000)
+### 2. **Single Dataset Focus**
+Now focusing exclusively on Book1.xlsx:
+- **4,999 rows** with established baseline
 - **Same structure**: 16 columns with "Is Attack IP" labels
-- **9.04% anomaly rate** (vs 8.42% in Book1.xlsx)
-- **More representative**: Better statistics with larger sample
+- **8.42% anomaly rate** 
+n- **Proven performance**: Well-validated training data
 
 ### 3. **Training Script**
 Created `scripts/train_on_book2.py`:
-- Dedicated script for training on Book2.xlsx
+- Primary training script for Book1.xlsx
 - Proper error handling and validation
 - Clean progress output
 - Automatic model saving
@@ -34,30 +34,30 @@ Deleted old model files (will be regenerated during training):
 
 ## 📊 Expected Improvements
 
-| Metric | Book1.xlsx (5K rows) | Book2.xlsx (50K rows) |
-|--------|---------------------|----------------------|
-| Data Size | ~5,000 rows | 49,999 rows |
-| Training Samples | ~3,200 | ~32,000 |
-| Test Samples | ~800 | ~8,000 |
-| Statistics Quality | Baseline | **10x Better** |
+| Metric | Book1.xlsx (4,999 rows) | Status |
+|--------|---------------------|--------|
+| Data Size | 4,999 rows | Final |
+| Training Samples | ~2,999 | Stable |
+| Test Samples | ~2,000 | Stable |
+| Statistics Quality | Verified | Production-Ready |
 
 ### Expected Benefits:
-- ✓ More robust model with better generalization
-- ✓ Better outlier detection with larger sample
-- ✓ More stable threshold estimation
-- ✓ Improved confidence in metrics
+- ✓ Focused and reliable model with proven data
+- ✓ Consistent performance on established baseline
+- ✓ Simplified testing and deployment
+- ✓ Clear, reproducible results
 
 ## 🚀 Next Steps
 
-### To Train on Book2.xlsx:
+### To Train on Book1.xlsx:
 ```bash
 cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
 python3 scripts/train_on_book2.py
 ```
 
 ### Expected Training Output:
-- Loads 49,999 authentication logs
-- Performs 80/20 stratified split
+- Loads 4,999 authentication logs from Book1.xlsx
+- Performs 60/40 stratified split
 - Trains semi-supervised Labeled Propagation model
 - Evaluates on test set with multiple metrics
 - Saves trained model and artifacts

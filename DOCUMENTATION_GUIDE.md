@@ -11,7 +11,7 @@ graph TB
         OktaHook["🔐 Okta Event Hook"]
         StreamSim["📡 Stream Simulator"]
     end
-    
+
     subgraph "DATA PIPELINE"
         CSVParser["CSV Parser"]
         OktaAdapter["Okta Adapter"]
@@ -20,25 +20,25 @@ graph TB
         FeatureEngine["Feature Engineering<br/>(12 Features)"]
         FeatureDB["SQLite<br/>Features Table"]
     end
-    
+
     subgraph "ML LAYER"
         Ensemble["4-Model Ensemble<br/>(LP + LS + RF + ET)"]
         RiskScore["Risk Scoring<br/>(0-100 Scale)"]
         AnomalyDetect["Anomaly Classification<br/>(Risk > 0.3)"]
     end
-    
+
     subgraph "STORAGE"
         EventsTable["events"]
         FeaturesTable["features"]
         AnomaliesTable["anomalies<br/>(with reasons)"]
         UsersTable["users<br/>(baselines)"]
     end
-    
+
     subgraph "PRESENTATION"
         Dashboard["📊 Streamlit Dashboard<br/>(6 Tabs)"]
         API["🔌 FastAPI<br/>(REST Endpoints)"]
     end
-    
+
     CSVUpload --> CSVParser
     OktaHook --> OktaAdapter
     StreamSim --> EventValidator
@@ -73,14 +73,14 @@ sequence
     participant FeatEng as Feature<br/>Engine
     participant Ensemble as 4-Model<br/>Ensemble
     participant RiskScore as Risk<br/>Scoring
-    
+
     User->>Streamlit: Upload CSV file
     Streamlit->>Parser: parse_csv(file)
     Parser-->>Streamlit: AuthEvent list
-    
+
     Streamlit->>DB: insert_events(events)
     DB-->>Streamlit: ✓ 1,234 stored
-    
+
     loop For each event
         Streamlit->>FeatEng: extract_features(event)
         FeatEng->>DB: query baseline + history
@@ -88,7 +88,7 @@ sequence
         FeatEng-->>Streamlit: 12-feature vector
         Streamlit->>DB: insert_features()
     end
-    
+
     loop Batch scoring
         Streamlit->>Ensemble: score(features)
         Note over Ensemble: 4 models vote
@@ -96,7 +96,7 @@ sequence
         Streamlit->>RiskScore: risk_score = 0-100
         Streamlit->>DB: store_anomaly()
     end
-    
+
     Streamlit-->>User: ✓ Processing complete<br/>78 anomalies detected
     User->>Streamlit: View 🔍 Anomaly Explorer
     Streamlit->>DB: SELECT top 50 anomalies
@@ -113,6 +113,7 @@ sequence
 #### Problem Being Solved
 
 Single ML models have limitations:
+
 - **Isolation Forest** (unsupervised) - Misses structural patterns
 - **Random Forest** (supervised) - Requires labeled data, can overfit
 - **Neural Networks** - Requires lots of data, hard to interpret
@@ -280,11 +281,13 @@ streamlit run dashboard/app.py --server.port 8501
 ```
 
 **Pros:**
+
 - Simple, no external dependencies
 - Pre-trained models included
 - Streamlit handles UI
 
 **Cons:**
+
 - Local only (can't share URL easily)
 - Not scalable (single machine)
 - No real-time event ingestion
@@ -307,11 +310,13 @@ ngrok http 8000
 ```
 
 **Pros:**
+
 - Real-time event ingestion
 - REST API for automation
 - Okta integration possible
 
 **Cons:**
+
 - More complex setup
 - Requires ngrok for public URL
 
@@ -329,6 +334,7 @@ docker-compose up --build
 ```
 
 **Dockerfile:**
+
 ```dockerfile
 FROM python:3.10-slim
 
@@ -342,11 +348,13 @@ CMD ["streamlit", "run", "dashboard/app.py", "--server.port", "8501"]
 ```
 
 **Pros:**
+
 - Reproducible environments
 - Easy scaling
 - Cloud-ready
 
 **Cons:**
+
 - Docker required
 - Need registry for production
 
@@ -409,17 +417,17 @@ For High Volume:
 1. Batch Processing
    - Process events in batches (100/batch)
    - Reduce database round trips
-   
+
 2. Caching
    - Cache user baselines (Redis)
    - Cache feature extraction
    - TTL: 1 hour
-   
+
 3. Parallelization
    - Feature extraction: multiprocessing
    - Model scoring: vectorize with numpy
    - Use joblib for batch prediction
-   
+
 4. Database
    - Index on user_id, timestamp
    - Archive old events (>90 days)
@@ -483,14 +491,14 @@ Quarterly:
 
 ### Troubleshooting Deployment
 
-| Issue | Solution |
-|-------|----------|
-| **Port already in use** | `lsof -i :8501` then `kill -9 <PID>` |
-| **Module not found** | Reinstall: `pip install -r requirements.txt` |
-| **Database locked** | Close other connections to `data/store.sqlite` |
-| **Streamlit stuck** | Clear cache: `rm -rf ~/.streamlit` |
-| **Memory issues** | Reduce batch size, archive old events |
-| **Slow scoring** | Check database indexes, use vectorization |
+| Issue                   | Solution                                       |
+| ----------------------- | ---------------------------------------------- |
+| **Port already in use** | `lsof -i :8501` then `kill -9 <PID>`           |
+| **Module not found**    | Reinstall: `pip install -r requirements.txt`   |
+| **Database locked**     | Close other connections to `data/store.sqlite` |
+| **Streamlit stuck**     | Clear cache: `rm -rf ~/.streamlit`             |
+| **Memory issues**       | Reduce batch size, archive old events          |
+| **Slow scoring**        | Check database indexes, use vectorization      |
 
 ---
 
@@ -591,6 +599,7 @@ DATA:
 ### Quick Navigation
 
 **I want to...**
+
 - 📖 Start quickly → [QUICK_START.md](QUICK_START.md)
 - 🔍 Understand anomaly → [DASHBOARD_GUIDE.md](DASHBOARD_GUIDE.md#tab-2-anomaly-explorer--core-feature)
 - 📊 See model performance → [ML_MODEL.md](ML_MODEL.md)
@@ -638,9 +647,9 @@ A: Yes, see [docs/okta_event_hook_setup.md](docs/okta_event_hook_setup.md)
 4. ✅ **Documentation** - Architecture, model rationale, deployment guide
 
 **Next Steps:**
+
 1. Start dashboard: `streamlit run dashboard/app.py`
 2. Explore 🔍 Anomaly Explorer tab
 3. Read anomaly explanations
 4. Check individual model performance
 5. Deploy to production (see deployment guide)
-

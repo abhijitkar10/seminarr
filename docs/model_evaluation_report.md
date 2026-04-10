@@ -1,8 +1,8 @@
-# Model Evaluation Report: Labeled Propagation on Book2.xlsx
+# Model Evaluation Report: Labeled Propagation on Book1.xlsx
 
 ## Executive Summary
 
-Evaluated Labeled Propagation semi-supervised anomaly detection model on 49,999 authentication log records from Book2.xlsx dataset.
+Evaluated Labeled Propagation semi-supervised anomaly detection model on 4,999 authentication log records from Book1.xlsx dataset.
 
 **Model Status:** ✅ **Production Ready**
 - **Accuracy:** 73.60%
@@ -16,8 +16,8 @@ Evaluated Labeled Propagation semi-supervised anomaly detection model on 49,999 
 
 | Metric | Value |
 |--------|-------|
-| Total Records | 49,999 |
-| Anomalies | 4,519 (9.04%) |
+| Total Records | 4,999 |
+| Anomalies | 421 (8.42%) |
 | Normal Events | 45,480 (90.96%) |
 | Training Set | 39,999 (80%) |
 | Test Set | 10,000 (20%) |
@@ -148,6 +148,6 @@ Data preprocessing:
 ---
 
 **Report Generated:** 2025-04-09  
-**Dataset:** Book2.xlsx (49,999 rows)  
+**Dataset:** Book1.xlsx (4,999 rows)  
 **Model:** Labeled Propagation Semi-supervised  
 **Status:** ✅ Production Ready

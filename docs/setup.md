@@ -19,6 +19,7 @@ Pre-trained models are included! Start with 🔍 **Anomaly Explorer** tab.
 ## Option 1: Local (venv)
 
 ### Prerequisites
+
 - Python 3.10+
 - macOS, Linux, or Windows
 
@@ -51,16 +52,19 @@ Then open: http://localhost:8501
 ### Run API + Dashboard (Optional, for Okta integration)
 
 Terminal 1 — API:
+
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
 Terminal 2 — Dashboard:
+
 ```bash
 streamlit run dashboard/app.py --server.port 8501
 ```
 
 Access:
+
 - Dashboard: http://localhost:8501
 - API Swagger: http://localhost:8000/docs
 
@@ -84,6 +88,7 @@ OKTA_EVENT_HOOK_AUTH_HEADER=authorization
 ## Option 2: Docker
 
 ### Prerequisites
+
 - Docker + Docker Compose
 
 ### Steps
@@ -94,6 +99,7 @@ docker-compose up --build
 ```
 
 ### Access
+
 - Dashboard: http://localhost:8501
 - API: http://localhost:8000/docs
 
@@ -128,6 +134,7 @@ python scripts/stream_simulator.py --rps 2 --anomaly-prob 0.1
 ```
 
 Flags:
+
 - `--rps` — events per second (default: 2)
 - `--anomaly-prob` — fraction of anomalous events (default: 0.1)
 - `--url` — API endpoint (default: http://localhost:8000/ingest)

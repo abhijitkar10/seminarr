@@ -14,14 +14,14 @@
 
 ### Key Metrics
 
-| Metric | Score | Interpretation |
-|--------|-------|-----------------|
-| **ROC-AUC** | **0.8884** ⭐ | Excellent discrimination between normal & anomalies |
-| **F1-Score** | 0.4091 | Balanced precision-recall |
-| **Recall** | 0.4286 | Catches ~43% of anomalies (moderate sensitivity) |
-| **Precision** | 0.3889 | ~39% of flagged events are truly anomalous |
-| **Accuracy** | 89.60% | Overall correctness including true negatives |
-| **Test Size** | 1,000 | Well-balanced evaluation set |
+| Metric        | Score         | Interpretation                                      |
+| ------------- | ------------- | --------------------------------------------------- |
+| **ROC-AUC**   | **0.8884** ⭐ | Excellent discrimination between normal & anomalies |
+| **F1-Score**  | 0.4091        | Balanced precision-recall                           |
+| **Recall**    | 0.4286        | Catches ~43% of anomalies (moderate sensitivity)    |
+| **Precision** | 0.3889        | ~39% of flagged events are truly anomalous          |
+| **Accuracy**  | 89.60%        | Overall correctness including true negatives        |
+| **Test Size** | 1,000         | Well-balanced evaluation set                        |
 
 ### Confusion Matrix
 
@@ -87,6 +87,7 @@ Limitations:
 ```
 
 **Performance (Test Set):**
+
 ```
 Accuracy:  87.20%
 Precision: 0.5625
@@ -117,6 +118,7 @@ Limitations:
 ```
 
 **Performance (Test Set):**
+
 ```
 Accuracy:  88.10%
 Precision: 0.6111
@@ -150,6 +152,7 @@ Limitations:
 ```
 
 **Performance (Test Set):**
+
 ```
 Accuracy:  91.30%
 Precision: 0.6923
@@ -184,6 +187,7 @@ Limitations:
 ```
 
 **Performance (Test Set):**
+
 ```
 Accuracy:  90.80%
 Precision: 0.6522
@@ -243,15 +247,15 @@ risk_score = ensemble_score * 100  # 0-100 scale
 if risk_score < 20:
     risk_level = "🟢 LOW"
     action = "Monitor"
-    
+
 elif risk_score < 50:
     risk_level = "🟡 MEDIUM"
     action = "Consider MFA challenge"
-    
+
 elif risk_score < 75:
     risk_level = "🟠 HIGH"
     action = "Recommend blocking"
-    
+
 else:  # >= 75
     risk_level = "🔴 CRITICAL"
     action = "IMMEDIATE INVESTIGATION"
@@ -282,12 +286,14 @@ Top 10 Most Important Features:
 ### Interpretation
 
 **High Impact Features:**
+
 - User's failure rate (behavioral history)
 - Off-hours access (temporal anomaly)
 - New locations (geographic anomaly)
 - Resource characteristics
 
 **Lower Impact Features:**
+
 - Specific hour (less important than off-hours flag)
 - Device type (secondary signal)
 
