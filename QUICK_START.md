@@ -1,5 +1,14 @@
 # 🎯 QUICK START GUIDE - All 6 Requirements Implemented
 
+## Install Dependencies (First Time Only)
+
+```bash
+cd /Users/abhijitkar/Documents/trae_projects/seminar/seminarr
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
 ## Start Dashboard (30 seconds)
 
 ```bash

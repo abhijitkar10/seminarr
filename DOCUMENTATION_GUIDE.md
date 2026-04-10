@@ -239,6 +239,7 @@ Ensemble wins:
 
 ☐ Dependencies
   ☐ pip install -r requirements.txt
+  ☐ Includes: fastapi, streamlit, scikit-learn, plotly, pandas
   ☐ All packages installed successfully
   ☐ No version conflicts
 
