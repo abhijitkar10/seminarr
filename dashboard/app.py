@@ -571,23 +571,23 @@ with tab_anomalies:
     total_events = cursor.fetchone()[0]
     cursor.execute("SELECT COUNT(*) FROM anomalies")
     total_anomalies = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 2.0")
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 2.5")
     critical = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 1.5 AND risk < 2.0")
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 1.8 AND risk < 2.5")
     high = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 1.0 AND risk < 1.5")
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk >= 1.2 AND risk < 1.8")
     medium = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk < 1.0")
+    cursor.execute("SELECT COUNT(*) FROM anomalies WHERE risk < 1.2")
     low = cursor.fetchone()[0]
     conn.close()
     
     # Display comprehensive statistics
     st.subheader("📊 Anomaly Statistics")
     col_a1, col_a2, col_a3, col_a4 = st.columns(4)
-    col_a1.metric("🔴 Critical (risk ≥ 2.0)", f"{critical:,}")
-    col_a2.metric("🟠 High (1.5-2.0)", f"{high:,}")
-    col_a3.metric("🟡 Medium (1.0-1.5)", f"{medium:,}")
-    col_a4.metric("🟢 Low (< 1.0)", f"{low:,}")
+    col_a1.metric("🔴 Critical (risk ≥ 2.5)", f"{critical:,}")
+    col_a2.metric("🟠 High (1.8-2.5)", f"{high:,}")
+    col_a3.metric("🟡 Medium (1.2-1.8)", f"{medium:,}")
+    col_a4.metric("🟢 Low (< 1.2)", f"{low:,}")
     
     st.divider()
     col_a5, col_a6, col_a7 = st.columns(3)
@@ -608,13 +608,13 @@ with tab_anomalies:
         })
     df = pd.DataFrame(anom_list)
     if not df.empty:
-        # Risk level color badges
+        # Risk level color badges (realistic thresholds for ~8% attack rate)
         def risk_level(risk: float) -> str:
-            if risk >= 2.0:
+            if risk >= 2.5:
                 return "🔴 Critical"
-            elif risk >= 1.5:
+            elif risk >= 1.8:
                 return "🟠 High"
-            elif risk >= 1.0:
+            elif risk >= 1.2:
                 return "🟡 Medium"
             return "🟢 Low"
 

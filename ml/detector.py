@@ -118,28 +118,29 @@ class AnomalyDetector:
         return score, {k: float(v) for k, v in zip(FEATURE_KEYS, z)}
 
     def risk_score(self, s: float, f: Dict[str, Any]) -> Tuple[float, List[str]]:
-        """Calculate risk score from anomaly score and features"""
+        """Calculate risk score from anomaly score and features (realistic 8% threshold)"""
         reasons = []
         risk = 0.0
 
-        # Base score from anomaly detection
-        risk += 0.5 * s
+        # Base score from anomaly detection (more strict)
+        risk += 1.0 * s  # Require higher base anomaly score
 
-        # Feature-based risk factors
+        # Feature-based risk factors (more conservative)
         if f.get("off_hours"):
-            risk += 0.8
+            risk += 0.3
             reasons.append("Off-hours access")
-        if (f.get("geo_velocity_kmh") or 0) > 600:
-            risk += 1.2
+        if (f.get("geo_velocity_kmh") or 0) > 900:  # Higher threshold
+            risk += 0.8
             reasons.append("Unrealistic geo-velocity")
-        if (f.get("failure_burst") or 0) > 0.5:
-            risk += 1.0
+        if (f.get("failure_burst") or 0) > 0.7:  # Higher threshold
+            risk += 0.6
             reasons.append("Failure burst before event")
-        if (f.get("resource_rarity") or 0) > 0.8:
-            risk += 0.7
+        if (f.get("resource_rarity") or 0) > 0.9:  # Higher threshold
+            risk += 0.4
             reasons.append("Rare resource access")
-        if not f.get("new_device"):
-            risk -= 0.2
+        if f.get("new_device"):
+            risk += 0.2
+            reasons.append("New device detected")
 
         return risk, reasons
 
