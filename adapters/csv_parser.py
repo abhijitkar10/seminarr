@@ -96,6 +96,9 @@ def parse_csv(file: BinaryIO | io.TextIOBase) -> tuple[list[dict[str, Any]], lis
 def parse_excel(file_path: str | Path) -> tuple[list[dict[str, Any]], list[str]]:
     """Parse an Excel file (.xlsx) into a list of event dicts.
     
+    Automatically maps common column name variations to standard names.
+    Auto-generates 'action' and 'resource' if not present.
+    
     Args:
         file_path: Path to .xlsx file
     
@@ -116,19 +119,80 @@ def parse_excel(file_path: str | Path) -> tuple[list[dict[str, Any]], list[str]]
         errors.append(f"Failed to read Excel file: {str(e)}")
         return rows, errors
     
-    # Check required columns
-    header_set = set(df.columns)
-    missing = REQUIRED_COLUMNS - header_set
+    # Column name mapping for common variations
+    column_mapping = {
+        # Timestamp variations
+        'login timestamp': 'timestamp',
+        'timestamp': 'timestamp',
+        'date': 'timestamp',
+        'time': 'timestamp',
+        
+        # User ID variations
+        'user id': 'user_id',
+        'user_id': 'user_id',
+        'userid': 'user_id',
+        'username': 'user_id',
+        
+        # Success variations
+        'login successful': 'success',
+        'success': 'success',
+        'is_successful': 'success',
+        'successful': 'success',
+        
+        # IP Address variations
+        'ip address': 'ip_address',
+        'ip_address': 'ip_address',
+        'ipaddress': 'ip_address',
+        'ip': 'ip_address',
+        
+        # Other optional columns
+        'country': 'country',
+        'region': 'region',
+        'city': 'city',
+        'asn': 'asn',
+        'user agent string': 'user_agent',
+        'user_agent': 'user_agent',
+        'browser name and version': 'browser',
+        'os name and version': 'os',
+        'device type': 'device_type',
+        'device_id': 'device_id',
+        'is attack ip': 'is_attack',
+        'is account takeover': 'is_account_takeover',
+        'round-trip time [ms]': 'rtt_ms',
+    }
+    
+    # Normalize and map column names
+    normalized_df = df.copy()
+    column_remap = {}
+    for col in normalized_df.columns:
+        col_lower = col.strip().lower()
+        if col_lower in column_mapping:
+            new_col = column_mapping[col_lower]
+            if new_col not in column_remap.values():  # Avoid duplicates
+                column_remap[col] = new_col
+    
+    normalized_df = normalized_df.rename(columns=column_remap)
+    
+    # Auto-generate missing required columns
+    if 'resource' not in normalized_df.columns:
+        normalized_df['resource'] = 'Authentication'
+    if 'action' not in normalized_df.columns:
+        normalized_df['action'] = 'LOGIN'
+    
+    # Check for required columns after mapping and auto-generation
+    missing = REQUIRED_COLUMNS - set(normalized_df.columns)
     if missing:
         errors.append(f"Missing required columns: {', '.join(sorted(missing))}")
         return rows, errors
     
     # Parse each row
-    for i, (idx, raw) in enumerate(df.iterrows(), start=2):
+    for i, (idx, raw) in enumerate(normalized_df.iterrows(), start=2):
         row_errors: list[str] = []
+        
+        # Check for missing required values
         for col in REQUIRED_COLUMNS:
             val = raw.get(col, "")
-            if pd.isna(val) or str(val).strip() == "":
+            if pd.isna(val) or (isinstance(val, str) and str(val).strip() == ""):
                 row_errors.append(f"row {i}: missing value for '{col}'")
         
         if row_errors:
@@ -146,13 +210,13 @@ def parse_excel(file_path: str | Path) -> tuple[list[dict[str, Any]], list[str]]
             "event_id": str(raw.get("event_id", "")) if not pd.isna(raw.get("event_id")) else str(uuid.uuid4()),
             "user_id": str(raw["user_id"]).strip(),
             "timestamp": ts_str,
-            "resource": str(raw["resource"]).strip(),
-            "action": str(raw["action"]).strip(),
+            "resource": str(raw["resource"]).strip() if not pd.isna(raw.get("resource")) else "Authentication",
+            "action": str(raw["action"]).strip() if not pd.isna(raw.get("action")) else "LOGIN",
             "success": _coerce_bool(str(raw["success"])) or False,
             "ip_address": str(raw.get("ip_address", "")).strip() if not pd.isna(raw.get("ip_address")) else None,
             "latitude": _coerce_float(str(raw.get("latitude"))) if not pd.isna(raw.get("latitude")) else None,
             "longitude": _coerce_float(str(raw.get("longitude"))) if not pd.isna(raw.get("longitude")) else None,
-            "location": str(raw.get("location", "")).strip() if not pd.isna(raw.get("location")) else None,
+            "location": str(raw.get("location", f"{raw.get('country', '')}-{raw.get('city', '')}")).strip() if not pd.isna(raw.get("location")) else None,
             "user_agent": str(raw.get("user_agent", "")).strip() if not pd.isna(raw.get("user_agent")) else None,
             "device_id": str(raw.get("device_id", "")).strip() if not pd.isna(raw.get("device_id")) else None,
             "mfa_used": _coerce_bool(str(raw.get("mfa_used"))) if not pd.isna(raw.get("mfa_used")) else None,

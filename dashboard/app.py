@@ -400,59 +400,59 @@ The ensemble combines **different model architectures** to catch attacks that in
         st.info("Train the ensemble first using the form above.")
 
 with tab_upload:
-    st.subheader("Upload Authentication Logs (CSV)")
+    st.subheader("📊 Upload Authentication Logs (XLSX Format)")
 
     col_info, col_sample = st.columns([2, 1])
     with col_info:
         st.markdown(
             """
-**Required columns:** `user_id`, `timestamp`, `resource`, `action`, `success`
+**Supported Format:** .xlsx (Excel files)
 
-**Optional columns:** `event_id`, `ip_address`, `latitude`, `longitude`, `location`,
-`user_agent`, `device_id`, `mfa_used`, `failure_reason`, `privilege_level`
+**Required columns (any of these variations):**
+- **User ID:** `User ID`, `user_id`, `username`, `userid`
+- **Timestamp:** `Login Timestamp`, `timestamp`, `date`, `time`
+- **Success:** `Login Successful`, `success`, `successful`
+- ~~Resource~~ (auto-generated as "Authentication")
+- ~~Action~~ (auto-generated as "LOGIN")
 
-- `timestamp` must be **ISO 8601** format (e.g. `2026-03-28T09:15:00`)
-- `success` accepts `true/false` or `1/0`
-- If `event_id` is omitted, one is auto-generated per row.
+**Optional columns:**
+- `IP Address`, `Country`, `Region`, `City`, `ASN`
+- `User Agent String`, `Browser Name and Version`, `OS Name and Version`
+- `Device Type`, `Is Attack IP`, `Is Account Takeover`
+
+**Column name mapping:** The system automatically maps common variations to standard names.
+For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
             """
         )
     with col_sample:
-        if SAMPLE_CSV_PATH.exists():
-            with open(SAMPLE_CSV_PATH, "rb") as f:
-                st.download_button(
-                    "\u2B07\uFE0F Download sample CSV",
-                    data=f.read(),
-                    file_name="sample_logs.csv",
-                    mime="text/csv",
-                )
-        else:
-            st.info("Run `python scripts/generate_sample_csv.py` to create the sample file.")
+        st.info("💡 Use Book1.xlsx or Book2.xlsx as templates")
 
-    uploaded = st.file_uploader("Choose a CSV file", type=["csv"])
+    uploaded = st.file_uploader("Choose an Excel file (.xlsx)", type=["xlsx", "xls"])
 
     if uploaded is not None:
-        rows, errors = csv_parser.parse_csv(uploaded)
+        rows, errors = csv_parser.parse_excel(uploaded)
         if errors:
-            for e in errors:
-                st.error(e)
+            with st.expander(f"⚠️ {len(errors)} errors during parsing", expanded=True):
+                for e in errors[:10]:
+                    st.error(e)
+                if len(errors) > 10:
+                    st.warning(f"... and {len(errors) - 10} more errors (showing first 10)")
+        
         if rows:
-            st.success(f"Parsed **{len(rows)}** events from CSV.")
-            with st.expander("Preview parsed events", expanded=False):
+            st.success(f"✅ Parsed **{len(rows)}** events from Excel file")
+            with st.expander("Preview parsed events (first 20)", expanded=False):
                 st.dataframe(pd.DataFrame(rows).head(20), use_container_width=True)
 
-            if st.button("Ingest into database"):
-                for r in rows:
-                    from datetime import datetime as _dt
-                    if isinstance(r.get("timestamp"), _dt):
-                        r["timestamp"] = r["timestamp"].isoformat()
-                accepted_ids = db.insert_events(rows)
-                conn = db.connect()
-                try:
-                    feat_rows = [features_mod.compute_features(r, conn=conn) for r in rows]
-                finally:
-                    conn.close()
-                db.insert_features(feat_rows)
-                st.success(f"Ingested **{len(accepted_ids)}** events and computed features.")
+            if st.button("💾 Ingest into database"):
+                with st.spinner("Ingesting events..."):
+                    accepted_ids = db.insert_events(rows)
+                    conn = db.connect()
+                    try:
+                        feat_rows = [features_mod.compute_features(r, conn=conn) for r in rows]
+                    finally:
+                        conn.close()
+                    db.insert_features(feat_rows)
+                    st.success(f"✅ Ingested **{len(accepted_ids)}** events and computed features")
 
     st.divider()
     st.subheader("Load Historical Data")

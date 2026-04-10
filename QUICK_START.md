@@ -47,7 +47,7 @@ Then open: **http://localhost:8501**
 
 | # | Requirement | Tab | Demo |
 |---|---|---|---|
-| **1** | 📥 **LOG INGESTION** | 📤 Data Ingestion | Upload CSV/XLSX → Auto parse → Score |
+| **1** | 📥 **LOG INGESTION** | 📤 Data Ingestion | Upload XLSX → Auto column mapping → Score |
 | **2** | 👤 **BASELINE PROFILES** | 👤 Baseline Profiles | Enter user_id → See typical hours/locations |
 | **3** | 🤖 **ANOMALY DETECTION** | 🧩 Ensemble Models | 4-model ML ensemble (88.84% ROC-AUC) |
 | **4** | 🎯 **RISK SCORES** | 🔍 Anomaly Explorer | 0-100 scale + 4 severity levels |
