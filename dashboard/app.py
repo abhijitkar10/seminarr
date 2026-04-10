@@ -492,9 +492,9 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
         if st.button("🔍 Score All Events", use_container_width=True):
             det = detector_mod.AnomalyDetector()
             if not det.is_trained:
-                st.warning("Train the model first")
+                st.warning("Train the ensemble model first")
             else:
-                with st.spinner("Scoring events..."):
+                with st.spinner("Scoring events with 4-Model Ensemble..."):
                     conn = db.connect()
                     feat_rows = conn.execute("SELECT * FROM features ORDER BY timestamp DESC LIMIT 2000").fetchall()
                     conn.close()
@@ -502,12 +502,16 @@ For example: "User ID" → user_id, "Login Timestamp" → timestamp, etc.
                     scored = 0
                     for r in feat_rows:
                         fr = dict(r)
-                        score, contrib = det.score_event(fr)
-                        risk, reasons = det.risk_score(score, fr)
-                        det.record_anomaly(fr, score, risk, reasons, contrib)
-                        maybe_send_alert(fr["event_id"], fr["user_id"], risk, reasons, contrib)
+                        # Get ensemble risk score and per-model contributions
+                        ensemble_risk, per_model = det.score_event(fr)
+                        # Add context-based adjustments
+                        risk, reasons = det.risk_score(ensemble_risk, fr)
+                        # Store contributions as model-specific scores
+                        contributions = per_model
+                        det.record_anomaly(fr, ensemble_risk, risk, reasons, contributions)
+                        maybe_send_alert(fr["event_id"], fr["user_id"], risk, reasons, contributions)
                         scored += 1
-                    st.success(f"✓ Scored **{scored}** events")
+                    st.success(f"✓ Scored **{scored}** events with ensemble model")
 
 # ========================== ACTIVITY TAB ==========================
 with tab_activity:
@@ -608,13 +612,13 @@ with tab_anomalies:
         })
     df = pd.DataFrame(anom_list)
     if not df.empty:
-        # Risk level color badges (realistic thresholds for ~8% attack rate)
+        # Risk level color badges (Ensemble-based, 0-3.0 scale)
         def risk_level(risk: float) -> str:
-            if risk >= 2.5:
+            if risk >= 2.0:
                 return "🔴 Critical"
-            elif risk >= 1.8:
+            elif risk >= 1.5:
                 return "🟠 High"
-            elif risk >= 1.2:
+            elif risk >= 1.0:
                 return "🟡 Medium"
             return "🟢 Low"
 
@@ -622,10 +626,26 @@ with tab_anomalies:
         display_cols = [c for c in df.columns if c != "contributions"]
         st.dataframe(df[display_cols], use_container_width=True)
 
-        st.subheader("🔍 Feature Contributions")
+        st.subheader("🔍 Model Contributions (Per-Model Scores)")
         idx = st.number_input("Row index to inspect", min_value=0, max_value=len(df) - 1, value=0)
         contrib = df.iloc[idx]["contributions"]
-        st.bar_chart(pd.Series(contrib).sort_values(ascending=False))
+        
+        # Display ensemble model contributions
+        if isinstance(contrib, dict):
+            model_scores = {
+                "Label Propagation": contrib.get("lp", 0),
+                "Label Spreading": contrib.get("ls", 0),
+                "Self-Training RF": contrib.get("st_rf", 0),
+                "Self-Training ET": contrib.get("st_et", 0),
+            }
+            st.bar_chart(pd.Series(model_scores).sort_values(ascending=False))
+            
+            st.caption("""
+**Ensemble Scores (0.0-1.0):**
+- Each model independently votes on anomaly likelihood
+- Higher score = more anomalous
+- Final risk = weighted average of all 4 models + context adjustments
+            """)
     else:
         st.info("No anomalies detected yet. Upload data, train the model, then score.")
 
