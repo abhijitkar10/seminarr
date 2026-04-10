@@ -200,10 +200,10 @@ class AnomalyDetector:
         reasons: List[str],
         contributions: Dict[str, float],
     ) -> None:
-        """Record detected anomaly in database"""
+        """Record detected anomaly in database (or update if already exists)"""
         conn = connect()
         conn.execute(
-            "INSERT INTO anomalies (event_id, user_id, timestamp, score, risk, reasons, contributions) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO anomalies (event_id, user_id, timestamp, score, risk, reasons, contributions) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 event.get("event_id"),
                 event.get("user_id"),
