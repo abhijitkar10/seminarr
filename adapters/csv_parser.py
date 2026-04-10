@@ -2,6 +2,7 @@ from __future__ import annotations
 import csv
 import io
 import uuid
+import hashlib
 from typing import Any, BinaryIO
 from pathlib import Path
 import pandas as pd
@@ -12,6 +13,17 @@ OPTIONAL_COLUMNS = {
     "user_agent", "device_id", "mfa_used", "failure_reason", "privilege_level",
 }
 ALL_COLUMNS = REQUIRED_COLUMNS | OPTIONAL_COLUMNS
+
+
+def _generate_deterministic_event_id(user_id: str, timestamp: str, resource: str, action: str) -> str:
+    """Generate a deterministic event_id from event attributes.
+    
+    This ensures the same event gets the same ID when loaded multiple times,
+    preventing duplicates when the same source file is re-ingested.
+    """
+    key = f"{user_id}|{timestamp}|{resource}|{action}".encode('utf-8')
+    hash_digest = hashlib.sha256(key).hexdigest()[:16]
+    return hash_digest
 
 _BOOL_TRUE = {"1", "true", "yes"}
 _BOOL_FALSE = {"0", "false", "no", ""}
@@ -72,7 +84,12 @@ def parse_csv(file: BinaryIO | io.TextIOBase) -> tuple[list[dict[str, Any]], lis
             continue
 
         event: dict[str, Any] = {
-            "event_id": raw.get("event_id", "").strip() or str(uuid.uuid4()),
+            "event_id": raw.get("event_id", "").strip() or _generate_deterministic_event_id(
+                raw["user_id"].strip(),
+                raw["timestamp"].strip(),
+                raw["resource"].strip(),
+                raw["action"].strip()
+            ),
             "user_id": raw["user_id"].strip(),
             "timestamp": raw["timestamp"].strip(),
             "resource": raw["resource"].strip(),
@@ -207,7 +224,12 @@ def parse_excel(file_path: str | Path) -> tuple[list[dict[str, Any]], list[str]]
             ts_str = str(ts).strip()
         
         event: dict[str, Any] = {
-            "event_id": str(raw.get("event_id", "")) if not pd.isna(raw.get("event_id")) else str(uuid.uuid4()),
+            "event_id": (str(raw.get("event_id", "")).strip() if not pd.isna(raw.get("event_id")) and str(raw.get("event_id", "")).strip() else None) or _generate_deterministic_event_id(
+                str(raw["user_id"]).strip(),
+                ts_str,
+                str(raw["resource"]).strip() if not pd.isna(raw.get("resource")) else "Authentication",
+                str(raw["action"]).strip() if not pd.isna(raw.get("action")) else "LOGIN"
+            ),
             "user_id": str(raw["user_id"]).strip(),
             "timestamp": ts_str,
             "resource": str(raw["resource"]).strip() if not pd.isna(raw.get("resource")) else "Authentication",
