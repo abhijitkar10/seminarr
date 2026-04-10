@@ -477,7 +477,7 @@ class RBAEnsembleDetector:
 
     def score_event(self, row: Dict[str, Any]) -> Tuple[float, Dict[str, float]]:
         """
-        Score a single event dict (Book2-style fields).
+        Score a single event dict (Book1-style fields).
         Returns (risk_score, per_model_scores).
         """
         df_single = pd.DataFrame([row])

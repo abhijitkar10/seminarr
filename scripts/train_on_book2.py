@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Train Labeled Propagation model on Book2.xlsx (49,999 authentication logs)
+Train Labeled Propagation model on Book1.xlsx (4,999 authentication logs)
 """
 import sys
 from pathlib import Path
@@ -14,10 +14,10 @@ from ml.labeled_propagation_model import LabeledPropagationDetector
 
 
 def main():
-    """Train and evaluate model on Book2.xlsx"""
+    """Train and evaluate model on Book1.xlsx"""
     
-    # Load Book2.xlsx data
-    data_path = Path(__file__).parent.parent / "Book2.xlsx"
+    # Load Book1.xlsx data
+    data_path = Path(__file__).parent.parent / "Book1.xlsx"
     if not data_path.exists():
         print(f"❌ Error: {data_path} not found")
         return False
